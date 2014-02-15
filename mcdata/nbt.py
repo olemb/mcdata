@@ -6,6 +6,7 @@ Todo:
     * fix arguments for Encode()/.encode() and Decode()/.decode().
 """
 from __future__ import print_function
+import sys  # Used for debugging.
 import gzip
 import struct
 
@@ -64,6 +65,7 @@ class TagFileDebugger(object):
         for i in range(length):
             data += self._read_byte()
         print('  }')
+        sys.stdout.flush()
 
         return data
 
@@ -79,19 +81,20 @@ class Decoder(object):
 
     def _read_tag(self):
         typeid = ord(self.file.read(1))
-        typename = _TYPE_NAMES[typeid]
+        typename = _TYPE_NAMES[typeid] 
         if typename == 'end':
             raise StopIteration
 
         name = self._read_string()
 
         if typename == 'list':
-            datatype = _TYPE_NAMES[self._read_byte()]
+            datatypeid = self._read_byte()
+            datatype = _TYPE_NAMES[datatypeid]
             name = '{}:{}list'.format(name, datatype)
             value = self._read_list(datatype)
         else:
             name = '{}:{}'.format(name, typename)
-            value = getattr(self, '_read_' + typename)()            
+            value = getattr(self, '_read_' + typename)()
 
         return (name, value)
 
@@ -149,10 +152,17 @@ class Decoder(object):
         return compound
 
     def _read_list(self, datatype):
+        print('===', datatype)
         length = self._read_int()
+
+        if datatype == 'end' and length == 0:
+            # This makes no sense!
+            # level.dat sometimes contains an empty list
+            # of type 'end' (typeid == 0). Just skip.
+            return []
+
         read = getattr(self, '_read_' + datatype)
         return [read() for _ in range(length)]
-        print(lst)
         return lst
 
     def _read_intarray(self):
