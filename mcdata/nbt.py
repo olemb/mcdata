@@ -131,9 +131,7 @@ class Decoder(object):
     def _read_string(self):
         length = self._read_short()
         if length:
-            string = self.file.read(length).decode('UTF-8')
-            # if 'wooden' in string:
-            #     print(repr(string))
+            return self.file.read(length).decode('UTF-8')
         else:
             return ''
 
@@ -248,4 +246,3 @@ def load(filename):
 
 def save(filename, data):
     gzip.GzipFile(filename, 'wb').write(str(encode(data)))
-

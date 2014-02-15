@@ -19,4 +19,4 @@ old = data
 
 save('b', data)
 new = load('a')
-# print(old == new)
+print(old == new)
