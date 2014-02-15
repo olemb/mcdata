@@ -1,5 +1,9 @@
 """
 Functions for reading NBT (Named Binary Tags) files.
+
+Todo:
+
+    * fix arguments for Encode()/.encode() and Decode()/.decode().
 """
 from __future__ import print_function
 import gzip
@@ -73,14 +77,12 @@ class Decoder(object):
         return self._read_tag()[1]
 
     def _read_tag(self):
-        tagtype = ord(self.file.read(1))
-        typename = _TYPE_NAMES[tagtype]
+        typeid = ord(self.file.read(1))
+        typename = _TYPE_NAMES[typeid]
         if typename == 'end':
             raise StopIteration
 
         name = self._read_string()
-
-
 
         if typename == 'list':
             datatype = _TYPE_NAMES[self._read_byte()]
@@ -153,8 +155,75 @@ class Decoder(object):
             value.append(self._read_int())
         return value
 
+class Encoder(object):
+    def __init__(self):
+        self.data = bytearray()
+
+    def encode(self, tag):
+        self._write_tag(':compound', tag)
+        return self.data
+
+    def _write_tag(self, name, value):
+        name, typename = name.rsplit(':', 1)
+        if typename.endswith('list'):
+            typename, datatype = typename[:-4], typename[-4:]
+
+        self.data.append(_TYPE_IDS[typename])
+        self._write_string(name)
+
+        if typename == 'list':
+            self.data.append(_TYPE_IDS[datatype])
+            self._write_list(value, datatype)
+        else:
+            getattr(self, '_write_{}'.format(typename))(value)
+
+    def _write_byte(self, value):
+        self.data.append(value)
+
+    def _write_short(self, value):
+        self.data.extend(struct.pack('>h', value))
+
+    def _write_int(self, value):
+        self.data.extend(struct.pack('>i', value))
+
+    def _write_long(self, value):
+        self.data.extend(struct.pack('>q', value))
+
+    def _write_float(self, value):
+        self.data.extend(struct.pack('>f', value))
+
+    def _write_double(self, value):
+        self.data.extend(struct.pack('>d', value))
+
+    def _write_bytearray(self, value):
+        self.data.extend(value)
+
+    def _write_string(self, value):
+        self.data.extend(struct.pack('>h', len(value)))
+        self.data.extend(value.encode('UTF-8'))
+
+    def _write_compound(self, tag):
+        for key, value in tag.items():
+            self._write_tag(key, value)
+            self._write_end()
+
+    def _write_list(self, value, datatype):
+        self.data.append(_TYPE_IDS[datatype])
+        write = getattr(self, '_write_{}'.format(datatype))
+        for item in value:
+            write(item)
+
+    def _write_intarray(self, value):
+        self._write_list(value, 'int')
+
+    def _write_end(self):
+        self.data.append(0)
+
 def decode(data):
     return Decoder(data).decode()
+
+def encode(value):
+    return Encoder().encode(value)
 
 def read(filename):
     return decode(gzip.GzipFile(filename, 'rb').read())

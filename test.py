@@ -5,5 +5,5 @@ from pprint import pprint
 from mcdata import nbt
 
 data = nbt.read(sys.argv[1])
-# pprint(data)
-print(json.dumps(data, indent=2))
+pprint(data)
+# print(json.dumps(data, indent=2))
