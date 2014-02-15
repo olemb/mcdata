@@ -36,4 +36,9 @@ data = {'Data:compound': {'DayTime:long': 19734000,
                    'thundering:byte': 0,
                    'version:int': 19133}}
 
-mcdata.nbt.write('/home/olemb/.minecraft/saves/test/level.dat', data)
+fmt = '/home/olemb/.minecraft/saves/{}/level.dat'
+data = mcdata.nbt.load(fmt.format('Chest Test'))
+data['Data:compound']['LevelName:string'] = 'Fisk!'
+mcdata.nbt.save(fmt.format('test'), data)
+
+# pprint(data)

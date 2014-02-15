@@ -152,7 +152,6 @@ class Decoder(object):
         return compound
 
     def _read_list(self, datatype):
-        print('===', datatype)
         length = self._read_int()
 
         if datatype == 'end' and length == 0:
@@ -183,7 +182,7 @@ class Encoder(object):
     def _write_tag(self, name, value):
         name, typename = name.rsplit(':', 1)
         if typename.endswith('list'):
-            typename, datatype = typename[:-4], typename[-4:]
+            datatype, typename = typename[:-4], typename[-4:]
 
         self.data.append(_TYPE_IDS[typename])
         self._write_string(name)
@@ -243,9 +242,9 @@ def decode(data):
 def encode(data):
     return Encoder().encode(data)
 
-def read(filename):
+def load(filename):
     return decode(gzip.GzipFile(filename, 'rb').read())
 
-def write(filename, data):
+def save(filename, data):
     gzip.GzipFile(filename, 'wb').write(str(encode(data)))
 
