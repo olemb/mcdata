@@ -205,13 +205,14 @@ class Encoder(object):
     def _write_compound(self, tag):
         for key, value in tag.items():
             self._write_tag(key, value)
-            self._write_end()
+        self._write_end()
 
     def _write_list(self, value, datatype):
         self.data.append(_TYPE_IDS[datatype])
         write = getattr(self, '_write_{}'.format(datatype))
         for item in value:
             write(item)
+        self._write_end()
 
     def _write_intarray(self, value):
         self._write_list(value, 'int')
