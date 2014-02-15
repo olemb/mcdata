@@ -223,8 +223,12 @@ class Encoder(object):
 def decode(data):
     return Decoder(data).decode()
 
-def encode(value):
-    return Encoder().encode(value)
+def encode(data):
+    return Encoder().encode(data)
 
 def read(filename):
     return decode(gzip.GzipFile(filename, 'rb').read())
+
+def write(filename, data):
+    gzip.GzipFile(filename, 'wb').write(str(encode(data)))
+
