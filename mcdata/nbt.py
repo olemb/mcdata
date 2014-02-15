@@ -73,7 +73,7 @@ class Decoder(object):
     def __init__(self, data, hexdata=False):
         self.hexdata = hexdata
         self.file = TagFile(data)
-        # self.file = TagFileDebugger(self.file)
+        self.file = TagFileDebugger(self.file)
 
     def decode(self):
         # This assumes that the outer tag is a compound.
@@ -81,14 +81,19 @@ class Decoder(object):
         return self._read_tag()[1]
 
     def _read_tag(self):
+        print('=== NEW TAG')
         typeid = ord(self.file.read(1))
         typename = _TYPE_NAMES[typeid] 
         if typename == 'end':
             raise StopIteration
 
+        print('=== READING NAME ...')
         name = self._read_string()
+        print('=== TYPE:', typename)
+        print('=== NAME:', name)
 
         if typename == 'list':
+            print('=== reading list')
             datatypeid = self._read_byte()
             datatype = _TYPE_NAMES[datatypeid]
             name = '{}:{}list'.format(name, datatype)
@@ -131,9 +136,11 @@ class Decoder(object):
     def _read_string(self):
         length = self._read_short()
         if length:
-            return self.file.read(length).decode('UTF-8')
+            data = self.file.read(length)
+            string = data.decode('UTF-8')
+            return string
         else:
-            return ''
+            return u''
 
     def _read_compound(self):
         compound = {}
@@ -225,7 +232,6 @@ class Encoder(object):
         write = getattr(self, '_write_{}'.format(datatype))
         for item in value:
             write(item)
-        self._write_end()
 
     def _write_intarray(self, value):
         self._write_int(len(value))

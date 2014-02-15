@@ -10,13 +10,11 @@ def load(name):
 def save(name, data):
     return mcdata.nbt.save(fmt.format(name), data)
 
-data = load('a')
 # print(data['Data:compound']['LevelName:string'])
 # print()
 # data['Data:compound']['LevelName:string'] = 'Fisk!'
 
-old = data
-
-save('b', data)
-new = load('a')
-print(old == new)
+# data = load('a')
+data = load('a')
+# save('b', data)
+# load('b')
