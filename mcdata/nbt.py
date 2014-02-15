@@ -69,6 +69,7 @@ class TagFileDebugger(object):
 
 class Decoder(object):
     def __init__(self, data, hexdata=False):
+        self.hexdata = hexdata
         self.file = TagFile(data)
         # self.file = TagFileDebugger(self.file)
 
@@ -120,7 +121,13 @@ class Decoder(object):
     def _read_bytearray(self):
         # Todo: implement hexdata.
         length = self._read_int()
-        return bytearray(self.file.read(length))
+        data = bytearray(self.file.read(length))
+        return data
+
+        if self.hexdata:
+            return ':'.join('{:02x}'.format(byte) for byte in data)
+        else:
+            return data
 
     def _read_string(self):
         length = struct.unpack('>h', self.file.read(2))[0]
