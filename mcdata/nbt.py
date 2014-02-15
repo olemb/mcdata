@@ -52,19 +52,19 @@ class TagFileDebugger(object):
     def _read_byte(self):
         char = self.file.read(1)
         pos = self.file.tell()
-        print('    {:08x}: {:02x} {!r}'.format(pos,
-                                               ord(char),
-                                               char))
+        sys.stdout.write('    {:08x}: {:02x} {!r}\n'.format(pos,
+                                                            ord(char),
+                                                            char))
         pos += 1
         return char
 
     def read(self, length):
         data = b''
 
-        print('  {READ')
+        sys.stdout.write('  {READ\n')
         for i in range(length):
             data += self._read_byte()
-        print('  }')
+        sys.stdout.write('  }\n')
         sys.stdout.flush()
 
         return data
@@ -76,7 +76,8 @@ class Decoder(object):
         # self.file = TagFileDebugger(self.file)
 
     def decode(self):
-        # This assumed that the outer tag is a compound.
+        # This assumes that the outer tag is a compound.
+        # Return its value.
         return self._read_tag()[1]
 
     def _read_tag(self):
@@ -102,23 +103,18 @@ class Decoder(object):
         return ord(self.file.read(1))
 
     def _read_short(self):
-        # 4 byte signed.
         return struct.unpack('>h', self.file.read(2))[0]
 
     def _read_int(self):
-        # 4 byte signed.
         return struct.unpack('>i', self.file.read(4))[0]
 
     def _read_long(self):
-        # 8 byte signed.
         return struct.unpack('>q', self.file.read(8))[0]
 
     def _read_float(self):
-        # 8 byte signed.
         return struct.unpack('>f', self.file.read(4))[0]
 
     def _read_double(self):
-        # 8 byte signed.
         return struct.unpack('>d', self.file.read(8))[0]
 
     def _read_bytearray(self):
@@ -133,9 +129,11 @@ class Decoder(object):
             return data
 
     def _read_string(self):
-        length = struct.unpack('>h', self.file.read(2))[0]
+        length = self._read_short()
         if length:
-            return self.file.read(length).decode('UTF-8')
+            string = self.file.read(length).decode('UTF-8')
+            # if 'wooden' in string:
+            #     print(repr(string))
         else:
             return ''
 
@@ -188,7 +186,6 @@ class Encoder(object):
         self._write_string(name)
 
         if typename == 'list':
-            self.data.append(_TYPE_IDS[datatype])
             self._write_list(value, datatype)
         else:
             getattr(self, '_write_{}'.format(typename))(value)
@@ -212,11 +209,14 @@ class Encoder(object):
         self.data.extend(struct.pack('>d', value))
 
     def _write_bytearray(self, value):
+        # Todo: handle hex string.
+        self._write_int(len(value))
         self.data.extend(value)
 
     def _write_string(self, value):
-        self.data.extend(struct.pack('>h', len(value)))
-        self.data.extend(value.encode('UTF-8'))
+        data = value.encode('UTF-8')
+        self._write_short(len(data))
+        self.data.extend(data)
 
     def _write_compound(self, tag):
         for key, value in tag.items():
@@ -224,14 +224,15 @@ class Encoder(object):
         self._write_end()
 
     def _write_list(self, value, datatype):
-        self.data.append(_TYPE_IDS[datatype])
         write = getattr(self, '_write_{}'.format(datatype))
         for item in value:
             write(item)
         self._write_end()
 
     def _write_intarray(self, value):
-        self._write_list(value, 'int')
+        self._write_int(len(value))
+        for n in value:
+            self._write_int(n)
 
     def _write_end(self):
         self.data.append(0)
