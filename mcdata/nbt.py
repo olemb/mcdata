@@ -84,7 +84,7 @@ class Parser(object):
 
         if typename == 'list':
             datatype = _TYPE_NAMES[self._read_byte()]
-            name = '{}:{}list'.format(typename, datatype)
+            name = '{}:{}list'.format(name, datatype)
             value = self._read_list(datatype)
         else:
             name = '{}:{}'.format(name, typename)
