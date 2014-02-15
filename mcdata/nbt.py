@@ -63,12 +63,12 @@ class TagFileDebugger(object):
 
         return data
 
-class Parser(object):
+class Decoder(object):
     def __init__(self, data, hexdata=False):
         self.file = TagFile(data)
         # self.file = TagFileDebugger(self.file)
 
-    def parse(self):
+    def decode(self):
         # This assumed that the outer tag is a compound.
         return self._read_tag()[1]
 
@@ -154,7 +154,7 @@ class Parser(object):
         return value
 
 def decode(data):
-    return Parser(data).parse()
+    return Decoder(data).decode()
 
 def read(filename):
     return decode(gzip.GzipFile(filename, 'rb').read())
