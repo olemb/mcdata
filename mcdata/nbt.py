@@ -83,7 +83,7 @@ class Parser(object):
 
 
         if typename == 'list':
-            datatype = tag_names[self._read_byte()]
+            datatype = _TYPE_NAMES[self._read_byte()]
             name = '{}:{}list'.format(typename, datatype)
             value = self._read_list(datatype)
         else:
