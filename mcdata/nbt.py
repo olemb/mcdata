@@ -289,7 +289,21 @@ def keys_only(obj):
         return ''
 
 class ValueWrapper(object):
+    """
+    Access tag values directly. Keys must exist.
+
+    Example:
+
+    >>> from mcdata.nbt import load, ValueWrapper
+    >>> ValueWrapper(load('level.dat'))
+    >>> level['Data/GameRules/keepInventory']
+    true
+    >>> level['Data/GameRules/keepInventory'] = 'false'
+    >>> # ... and save
+    """
+
     def __init__(self, tag):
+        # Todo: name? 'tag'?
         self.tag = tag   
 
     def __getitem__(self, path):
