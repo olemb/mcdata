@@ -98,13 +98,11 @@ class Tag(object):
 
         curtag = self
         for part in parts[:-1]:
-            print(part)
             curtag = curtag.value[part]
 
         if curtag.type == 'compound':
             curtag.value[parts[-1]] = tag
         elif curtag.type == 'list':
-            print('is a list!')
             try:
                 curtag.value[int(parts[-1])]
             except (ValueError, IndexError):
