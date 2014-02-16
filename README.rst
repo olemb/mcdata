@@ -16,3 +16,6 @@ Todo
 * rename tag to something else. (obj?)
 
 * Entities<endlist> will be a problem.
+
+* enter / exit for RegionFile.
+

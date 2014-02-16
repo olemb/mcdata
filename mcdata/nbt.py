@@ -7,24 +7,6 @@ import struct as _struct
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
 
-class Tag(object):
-    def __init__(self, type, value):
-        self.type = type
-        self.value = value
-        if isinstance(value, Tag):
-            raise ValueError()
-
-    def __repr__(self):
-        if self.type == 'compound':
-            value = '{{{} items}}'.format(len(self.value))
-        elif self.type == 'list':
-            value = '[{} items]'.format(len(self.value))
-        else:
-            value = repr(self.value)
-        return '<{} {}>'.format(self.type, value)
-
-    # Todo: these should only work for compound and list.
-
 def _init_types():
     """Initialize type lookup tables."""
     for i, name in enumerate(['end',
@@ -42,6 +24,39 @@ def _init_types():
 
         _TYPE_NAMES[i] = name
         _TYPE_IDS[name] = i
+
+class Tag(object):
+    def __init__(self, type, value):
+        self.type = type
+        self.value = value
+        if isinstance(value, Tag):
+            raise ValueError()
+
+    def walk(self):
+        todo = [(self, [])]
+
+        while todo:
+            (tag, path) = todo.pop()
+            if tag.type == 'compound':
+                # Add all values.
+                for name in sorted(tag.value.keys(), reverse=True):
+                    todo.append((tag.value[name], path + [name]))
+            elif tag.type == 'list':
+                for i, subtag in enumerate(reversed(tag.value)):
+                    todo.append((subtag, path + [str(i)]))
+
+            # Todo: are there ever spaces in tag names?
+            yield (tag, '/' + '/'.join(path))
+
+    def __repr__(self):
+        if self.type == 'compound':
+            value = '{{{} items}}'.format(len(self.value))
+        elif self.type == 'list':
+            value = '[{} items]'.format(len(self.value))
+        else:
+            value = repr(self.value)
+        return '<{} {}>'.format(self.type, value)
+
 
 class TagFile(object):
     def __init__(self, data):
