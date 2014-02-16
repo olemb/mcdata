@@ -4,11 +4,18 @@ Functions for reading NBT (Named Binary Tags) files.
 Todo:
 
     * fix arguments for Encode()/.encode() and Decode()/.decode().
+
+    * make _struct.pack()/unpack() calls faster and cleaner.
+
+    * implement JSON decoding.
+
+    * add options to JSON encoder? (indent etc.)
 """
 from __future__ import print_function
-import sys  # Used for debugging.
-import gzip
-import struct
+import sys as _sys  # Used for debugging.
+import gzip as _gzip
+import json as _json
+import struct as _struct
 
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
@@ -51,9 +58,9 @@ class TagFileDebugger(object):
     def _read_byte(self):
         char = self.file.read(1)
         pos = self.file.tell()
-        sys.stdout.write('    {:08x}: {:02x} {!r}\n'.format(pos,
-                                                            ord(char),
-                                                            char))
+        _sys.stdout.write('    {:08x}: {:02x} {!r}\n'.format(pos,
+                                                             ord(char),
+                                                             char))
         pos += 1
         return char
 
@@ -63,11 +70,11 @@ class TagFileDebugger(object):
     def read(self, length):
         data = b''
 
-        sys.stdout.write('  {READ\n')
+        _sys.stdout.write('  {READ\n')
         for i in range(length):
             data += self._read_byte()
-        sys.stdout.write('  }\n')
-        sys.stdout.flush()
+        _sys.stdout.write('  }\n')
+        _sys.stdout.flush()
 
         return data
 
@@ -110,19 +117,19 @@ class Decoder(object):
         return ord(self.file.read(1))
 
     def _read_short(self):
-        return struct.unpack('>h', self.file.read(2))[0]
+        return _struct.unpack('>h', self.file.read(2))[0]
 
     def _read_int(self):
-        return struct.unpack('>i', self.file.read(4))[0]
+        return _struct.unpack('>i', self.file.read(4))[0]
 
     def _read_long(self):
-        return struct.unpack('>q', self.file.read(8))[0]
+        return _struct.unpack('>q', self.file.read(8))[0]
 
     def _read_float(self):
-        return struct.unpack('>f', self.file.read(4))[0]
+        return _struct.unpack('>f', self.file.read(4))[0]
 
     def _read_double(self):
-        return struct.unpack('>d', self.file.read(8))[0]
+        return _struct.unpack('>d', self.file.read(8))[0]
 
     def _read_bytearray(self):
         length = self._read_int()
@@ -203,19 +210,19 @@ class Encoder(object):
         self.data.append(value)
 
     def _write_short(self, value):
-        self.data.extend(struct.pack('>h', value))
+        self.data.extend(_struct.pack('>h', value))
 
     def _write_int(self, value):
-        self.data.extend(struct.pack('>i', value))
+        self.data.extend(_struct.pack('>i', value))
 
     def _write_long(self, value):
-        self.data.extend(struct.pack('>q', value))
+        self.data.extend(_struct.pack('>q', value))
 
     def _write_float(self, value):
-        self.data.extend(struct.pack('>f', value))
+        self.data.extend(_struct.pack('>f', value))
 
     def _write_double(self, value):
-        self.data.extend(struct.pack('>d', value))
+        self.data.extend(_struct.pack('>d', value))
 
     def _write_bytearray(self, value):
         self._write_int(len(value))
@@ -259,7 +266,34 @@ def encode(data):
     return Encoder().encode(data)
 
 def load(filename):
-    return decode(gzip.GzipFile(filename, 'rb').read())
+    return decode(_gzip.GzipFile(filename, 'rb').read())
 
 def save(filename, data):
-    gzip.GzipFile(filename, 'wb').write(str(encode(data)))
+    _gzip.GzipFile(filename, 'wb').write(str(encode(data)))
+
+def _hex_encode_bytearrays(obj):
+    """Replace all bytearrays in an NBT tree with hex strings."""
+
+    fix = _hex_encode_bytearrays
+
+    if isinstance(obj, dict):
+        return {name: fix(value) for name, value in obj.items()}
+    elif isinstance(obj, list):
+        return [fix(value) for value in obj]
+    elif isinstance(obj, bytearray):
+        return ':'.join('{:02x}'.format(byte) for byte in obj)
+    else:
+        return obj
+
+def _hex_decode_bytearrays(obj):
+    """Decode all hex encoded bytearrays."""
+    raise NotImplemented
+
+def encode_json(data, indent=True):
+    """Encode NBT data as JSON.
+
+    The data will be indented with 2 spaces, """
+    return(_json.dumps(data, indent=2, sort_keys=True))
+
+def decode_json(string):
+    raise NotImplemented
