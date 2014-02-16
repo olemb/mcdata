@@ -1,41 +1,3 @@
-"""
-NBT (Named Binary Tags) implemented as dictionaries.
-
-Doesn't handle empty array, and such is useless.
-
-Keys are 'Name<type>' and values are Python types. Example:
-
-    {
-        "Data<compound>": {
-        "DayTime<long>": 19734000, 
-        "GameRules<compound>": {
-        "commandBlockOutput<string>": "true", 
-        "doDaylightCycle<string>": "false",
-    }, 
-
-Lists are normal Python lists with type given in the key:
-
-    "Items<intlist>": [1, 2, 3],
-
-The problem is empty lists, which are stored as having data type. This
-results in:
-
-    "Items<endlist>": [],
-
-which means you can't tell the type of an empty list. There is no way
-to get around this.
-
-
-Todo:
-
-    * fix arguments for Encode()/.encode() and Decode()/.decode().
-
-    * make _struct.pack()/unpack() calls faster and cleaner.
-
-    * implement JSON decoding.
-
-    * add options to JSON encoder? (indent etc.)
-"""
 from __future__ import print_function
 import sys as _sys  # Used for debugging.
 import gzip as _gzip
@@ -45,22 +7,31 @@ import struct as _struct
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
 
-for i, name in enumerate(['end',
-                          'byte',
-                          'short',
-                          'int',
-                          'long',
-                          'float',
-                          'double',
-                          'bytearray',
-                          'string',
-                          'list',
-                          'compound',
-                          'intarray']):
-    
-    _TYPE_NAMES[i] = name
-    _TYPE_IDS[name] = i
-del i, name
+class Tag(object):
+    def __init__(self, type, value):
+        self.type = type
+        self.value = value
+
+    def __repr__(self):
+        return '<{!r} {}>'.format(self.value, self.type)
+
+def _init_types():
+    """Initialize type lookup tables."""
+    for i, name in enumerate(['end',
+                              'byte',
+                              'short',
+                              'int',
+                              'long',
+                              'float',
+                              'double',
+                              'bytearray',
+                              'string',
+                              'list',
+                              'compound',
+                              'intarray']):
+
+        _TYPE_NAMES[i] = name
+        _TYPE_IDS[name] = i
 
 class TagFile(object):
     def __init__(self, data):
@@ -119,24 +90,21 @@ class Decoder(object):
     def _read_tag(self):
         # print('=== NEW TAG')
         typeid = ord(self.file.read(1))
-        typename = _TYPE_NAMES[typeid] 
-        # print('=== TYPE:', typename)
-        if typename == 'end':
+        if typeid == 0:
             raise StopIteration
 
+        typename = _TYPE_NAMES[typeid] 
         name = self._read_string()
 
         if typename == 'list':
-            datatypeid = self._read_byte()
-            datatype = _TYPE_NAMES[datatypeid]
-            # Todo: TAGFORMAT
-            fullname = '{}<{}list>'.format(name, datatype)
-            value = self._read_list(datatype)
+            datatype = _TYPE_NAMES[self._read_byte()]
+            tag = self._read_list(datatype)
+        elif typename == 'compound':
+            tag = self._read_compound()
         else:
-            # Todo: TAGFORMAT
-            fullname = '{}<{}>'.format(name, typename)
-            value = getattr(self, '_read_' + typename)()
-        return (fullname, value)
+            tag = Tag(typename, getattr(self, '_read_' + typename)())
+
+        return (name, tag)
 
     def _read_byte(self):
         return ord(self.file.read(1))
@@ -183,28 +151,18 @@ class Decoder(object):
 
     def _read_list(self, datatype):
         length = self._read_int()
-
-        if datatype == 'end' and length == 0:
-            # This makes no sense!
-            # level.dat sometimes contains an empty list
-            # of type 'end' (typeid == 0). Just skip.
-            # (This seems to be used to mark an empty list.)
+        if length == 0:
+            # Note: if length is 0 the datatype is 0,
+            # which means you can't determine the data type
+            # of an empty list.
             return []
 
         read = getattr(self, '_read_' + datatype)
-        lst = []
-        for _ in range(length):
-            item = read()
-            lst.append(item)
-
-        return lst
+        return [read() for _ in range(length)]
 
     def _read_intarray(self):
         length = self._read_int()
-        value = []
-        for i in range(length):
-            value.append(self._read_int())
-        return value
+        return [self._read_int() for _ in range(length)]
 
 class Encoder(object):
     def __init__(self):
@@ -330,3 +288,4 @@ def keys_only(obj):
     else:
         return ''
 
+_init_types()
