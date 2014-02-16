@@ -1,6 +1,8 @@
 Todo
 ----
 
+* add some easily editable format.
+
 * rename Tag (and tags) to something else?
 
 * refer to "tag" as "tree"?
