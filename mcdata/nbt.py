@@ -48,7 +48,9 @@ class Tag(object):
             # Todo: are there ever spaces in tag names?
             yield (tag, '/' + '/'.join(path))
 
-    # Todo: keys()
+    def keys(self):
+        for _, path in self.walk():
+            yield path
 
     def __getitem__(self, path):
         if not self.type in ['compound', 'list']:
