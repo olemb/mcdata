@@ -13,7 +13,26 @@ class Tag(object):
         self.value = value
 
     def __repr__(self):
-        return '<{!r} {}>'.format(self.value, self.type)
+        if self.type == 'compound':
+            value = '{{{} items}}'.format(len(self.value))
+        elif self.type == 'list':
+            value = '[{} items]'.format(len(self.value))
+        else:
+            value = repr(self.value)
+        return '<{} {}>'.format(self.type, value)
+
+    # Todo: these should only work for compound and list.
+
+    def __getitem__(self, name):
+        return self.value[name]
+
+    def __setitem__(self, name, value):
+        if not isinstance(self, Tag):
+            raise ValueError('value must be Tag')
+        self.value[name] = value
+
+    def __len__(self):
+        return len(value)
 
 def _init_types():
     """Initialize type lookup tables."""
@@ -85,19 +104,14 @@ class Decoder(object):
         # Todo: check if this is 0 and ''.
         self._read_byte()
         self._read_string()
-
-        data = self._read_compound()
+        data = self._read_tag('compound')
         # print(self.datalen - self.file.tell(), 'bytes left')
         return data
 
     def _read_tag(self, typename):
+        """Read data for tag."""
         read = getattr(self, '_read_' + typename)
-        tag = Tag(typename, read())
-
-        if tag.type in ['list', 'compound']:
-            return tag.value
-        else:
-            return tag
+        return Tag(typename, read())
 
     def _read_byte(self):
         return ord(self.file.read(1))
@@ -138,8 +152,7 @@ class Decoder(object):
                 if typename == 'end':
                     break
                 name = self._read_string()
-                value = self._read_tag(typename)
-                compound[name] = value
+                compound[name] = self._read_tag(typename)
         except StopIteration:
             # Why do we have to do this?
             # Shouldn't that happen automatically?
@@ -155,19 +168,11 @@ class Decoder(object):
             # of an empty list.
             return []
 
-        return [self._read_tag(datatype) for _ in range(length)]
+        return [Tag(datatype, self._read_tag(datatype)) for _ in range(length)]
 
     def _read_intarray(self):
         length = self._read_int()
         return [self._read_int() for _ in range(length)]
-
-def _get_type_and_value(tag):
-    if isinstance(tag, dict):
-        return 'compound', tag
-    elif isinstance(tag, list):
-        return 'list', tag
-    else:
-        return tag.type, tag.value
 
 class DebugByteArray(bytearray):
     def append(self, byte):
@@ -187,10 +192,13 @@ class Encoder(object):
         # The outer compound has no name.
         self._write_byte(_TYPE_IDS['compound'])
         self._write_string('')
-        self._write_compound(tag)
+        self._write_tag(tag)
 
         # Todo: support Python 3.
         return str(self.data)
+
+    def _write_tag(self, tag):
+        getattr(self, '_write_{}'.format(tag.type))(tag.value)
 
     def _write_byte(self, value):
         self.data.append(value)
@@ -221,11 +229,9 @@ class Encoder(object):
 
     def _write_compound(self, compound):
         for name, tag in sorted(compound.items()):
-            typename, value = _get_type_and_value(tag)
-
-            self.data.append(_TYPE_IDS[typename])  # Type byte.
+            self.data.append(_TYPE_IDS[tag.type])  # Type byte.
             self._write_string(name)
-            getattr(self, '_write_{}'.format(typename))(value)
+            self._write_tag(tag)
             
         self.data.append(0)  # End tag.
 
@@ -237,16 +243,14 @@ class Encoder(object):
         else:
             # Get datatype from first element.
             # Todo: check if all elements are of the same type.
-            datatype, _ = _get_type_and_value(lst[0])
+            datatype, _ = lst[0].type
             typeid = _TYPE_IDS[datatype]
 
             self._write_byte(typeid)
             self._write_int(len(lst))
 
-            write = getattr(self, '_write_{}'.format(datatype))
-            for item in lst:
-                _, value = _get_type_and_value(item)
-                write(value)
+            for tag in lst:
+                self._write_tag(tag)
 
     def _write_intarray(self, array):
         self._write_int(len(array))

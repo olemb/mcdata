@@ -10,8 +10,11 @@ def mkname(name):
 if 1:
     data = load(mkname('a'))
 
-    data['Data']['LevelName'] = Tag('string', 'Something!')
+    # data.value['Data']
 
-    save(mkname('b'), data)
-    data = load(mkname('b'))
+    print(data['Data']['GameRules']['keepInventory'])
+
     pprint(data)
+    # save(mkname('b'), data)
+    #data = load(mkname('b'))
+    #pprint(data)
