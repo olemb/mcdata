@@ -25,6 +25,12 @@ def _init_types():
         _TYPE_NAMES[i] = name
         _TYPE_IDS[name] = i
 
+def split_path(path):
+    return [part for part in path.split('/') if part]
+
+def canonize_path(path):
+    return '/' + '/'.join(path)
+
 class Tag(object):
     def __init__(self, type, value):
         self.type = type
@@ -46,7 +52,7 @@ class Tag(object):
                     todo.append((subtag, path + [str(i)]))
 
             # Todo: are there ever spaces in tag names?
-            yield (tag, '/' + '/'.join(path))
+            yield (tag, canonize_path(path))
 
     def keys(self):
         for _, path in self.walk():
@@ -62,10 +68,8 @@ class Tag(object):
         if path[:1] != '/':
             raise KeyError(path)
 
-        parts = [part for part in path.split('/') if part]
-
         tag = self
-        for part in parts:
+        for part in split_path(path):
             if tag.type == 'compound':
                 try:
                     tag = tag.value[part]
@@ -73,22 +77,40 @@ class Tag(object):
                     raise KeyError(path)
             elif tag.type == 'list':
                 try:
-                    tag.value[int(part)]
+                    tag = tag.value[int(part)]
                 except (ValueError, IndexError):
                     raise KeyError(path)
             else:
                 raise KeyError(path)
-        
-        return tag
 
-    def __setitem__(self, name, value):
+        return tag
+        
+    def __setitem__(self, path, tag):
         if not self.type in ['compound', 'list']:
             # Todo: more informative message?
             raise ValueError("{} tag doesn't support lookup".format(self.type))
-        elif not isinstance(value, Tag):
+        elif not isinstance(tag, Tag):
             raise ValueError('value must be Tag')
     
-        # Todo: set item.
+        parts = split_path(path)
+        if len(parts) < 1:
+            raise KeyError(path)
+
+        curtag = self
+        for part in parts[:-1]:
+            print(part)
+            curtag = curtag.value[part]
+
+        if curtag.type == 'compound':
+            curtag.value[parts[-1]] = tag
+        elif curtag.type == 'list':
+            print('is a list!')
+            try:
+                curtag.value[int(parts[-1])]
+            except (ValueError, IndexError):
+                raise KeyError(path)
+        else:
+            raise KeyError(path)
 
     def __repr__(self):
         if self.type == 'compound':

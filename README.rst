@@ -19,7 +19,13 @@ Todo
 
 * rename tag to something else. (obj?)
 
-* Entities<endlist> will be a problem.
-
 * enter / exit for RegionFile.
+
+* add check to Tag() for valid tag type?
+
+* should Tag.__setitem__() create compounds if they don't exist?
+
+* decide on a format for Tag.__repr__().
+
+* JSON support?
 
