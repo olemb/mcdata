@@ -273,7 +273,6 @@ def save(filename, data):
 
 def _hex_encode_bytearrays(obj):
     """Replace all bytearrays in an NBT tree with hex strings."""
-
     fix = _hex_encode_bytearrays
 
     if isinstance(obj, dict):
@@ -292,8 +291,17 @@ def _hex_decode_bytearrays(obj):
 def encode_json(data, indent=True):
     """Encode NBT data as JSON.
 
-    The data will be indented with 2 spaces, """
-    return(_json.dumps(data, indent=2, sort_keys=True))
+    The data will be indented with 2 spaces.
+    Byte arrays are hex encoded."""
+    data = _hex_encode_bytearrays(data)
+    return _json.dumps(data, indent=2, sort_keys=True)
 
 def decode_json(string):
     raise NotImplemented
+
+def keys_only(obj):
+    if isinstance(obj, dict):
+        return {name: keys_only(value) for name, value in obj.items()}
+    else:
+        return ''
+

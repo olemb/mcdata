@@ -14,3 +14,5 @@ Todo
 * type checking in the manipulator class? (Wrapper)
 
 * rename tag to something else. (obj?)
+
+* Entities<endlist> will be a problem.
