@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-from mcdata import nbt
+from mcdata import _nbt_dict as nbt
 
 if __name__ == '__main__':
     for filename in sys.argv[1:]:

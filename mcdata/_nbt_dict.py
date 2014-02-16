@@ -1,5 +1,30 @@
 """
-Functions for reading NBT (Named Binary Tags) files.
+NBT (Named Binary Tags) implemented as dictionaries.
+
+Doesn't handle empty array, and such is useless.
+
+Keys are 'Name<type>' and values are Python types. Example:
+
+    {
+        "Data<compound>": {
+        "DayTime<long>": 19734000, 
+        "GameRules<compound>": {
+        "commandBlockOutput<string>": "true", 
+        "doDaylightCycle<string>": "false",
+    }, 
+
+Lists are normal Python lists with type given in the key:
+
+    "Items<intlist>": [1, 2, 3],
+
+The problem is empty lists, which are stored as having data type. This
+results in:
+
+    "Items<endlist>": [],
+
+which means you can't tell the type of an empty list. There is no way
+to get around this.
+
 
 Todo:
 
