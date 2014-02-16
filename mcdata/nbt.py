@@ -11,6 +11,8 @@ class Tag(object):
     def __init__(self, type, value):
         self.type = type
         self.value = value
+        if isinstance(value, Tag):
+            raise ValueError()
 
     def __repr__(self):
         if self.type == 'compound':
@@ -22,17 +24,6 @@ class Tag(object):
         return '<{} {}>'.format(self.type, value)
 
     # Todo: these should only work for compound and list.
-
-    def __getitem__(self, name):
-        return self.value[name]
-
-    def __setitem__(self, name, value):
-        if not isinstance(self, Tag):
-            raise ValueError('value must be Tag')
-        self.value[name] = value
-
-    def __len__(self):
-        return len(value)
 
 def _init_types():
     """Initialize type lookup tables."""
@@ -168,7 +159,7 @@ class Decoder(object):
             # of an empty list.
             return []
 
-        return [Tag(datatype, self._read_tag(datatype)) for _ in range(length)]
+        return [self._read_tag(datatype) for _ in range(length)]
 
     def _read_intarray(self):
         length = self._read_int()
@@ -269,6 +260,34 @@ def load(filename):
 def save(filename, data):
     _gzip.GzipFile(filename, 'wb').write(encode(data))
 
+def _tmp_encode_python1(tag):
+    encode = _tmp_encode_python1
+    if tag.type == 'compound':
+        value = {key: encode(value) for key, value in tag.value.items()}
+    elif tag.type == 'list':
+        value = [encode(item) for item in tag.value]
+    else:
+        value = tag.value
+    return [tag.type, value]
+
+def _tmp_encode_typeless_python(tag, keys_only=False):
+    """Encode tags as Python with types removed.
+    
+    This can't be encoded back to NBT.q
+    """
+    encode = lambda t: _tmp_encode_typeless_python(t, keys_only=keys_only)
+
+    if tag.type == 'compound':
+        value = {key: encode(value) for key, value in tag.value.items()}
+    elif tag.type == 'list':
+        value = [encode(item) for item in tag.value]
+    else:
+        if keys_only:
+            value = ''
+        else:
+            value = tag.value
+    return value
+
 class TagWrapper(object):
     """
     Access tag values directly. Keys must exist.
@@ -290,13 +309,13 @@ class TagWrapper(object):
     def __getitem__(self, path):
         tag = self.tag
         for part in path.split('/'):
-            tag = tag[part]
+            tag = tag.value[part]
         return tag.value
 
     def __setitem__(self, path, value):
         tag = self.tag
         for part in path.split('/'):
-            tag = tag[part]
+            tag = tag.value[part]
         tag.value = value
 
 #
