@@ -30,7 +30,6 @@ for i, name in enumerate(['end',
     _TYPE_IDS[name] = i
 del i, name
 
-
 class TagFile(object):
     def __init__(self, data):
         self.pos = 0
@@ -58,6 +57,9 @@ class TagFileDebugger(object):
         pos += 1
         return char
 
+    def tell(self):
+        return self.file.tell()
+
     def read(self, length):
         data = b''
 
@@ -70,39 +72,39 @@ class TagFileDebugger(object):
         return data
 
 class Decoder(object):
-    def __init__(self, data, hexdata=False):
-        self.hexdata = hexdata
+    def __init__(self, data):
+        self.datalen = len(data)
         self.file = TagFile(data)
-        self.file = TagFileDebugger(self.file)
+        # self.file = TagFileDebugger(self.file)
 
     def decode(self):
         # This assumes that the outer tag is a compound.
         # Return its value.
-        return self._read_tag()[1]
+        data = self._read_tag()[1]
+        # print(self.datalen - self.file.tell(), 'bytes left')
+        return data
 
     def _read_tag(self):
-        print('=== NEW TAG')
+        # print('=== NEW TAG')
         typeid = ord(self.file.read(1))
         typename = _TYPE_NAMES[typeid] 
+        # print('=== TYPE:', typename)
         if typename == 'end':
             raise StopIteration
 
-        print('=== READING NAME ...')
         name = self._read_string()
-        print('=== TYPE:', typename)
-        print('=== NAME:', name)
 
         if typename == 'list':
-            print('=== reading list')
             datatypeid = self._read_byte()
             datatype = _TYPE_NAMES[datatypeid]
-            name = '{}:{}list'.format(name, datatype)
+            # Todo: TAGFORMAT
+            fullname = '{}<{}list>'.format(name, datatype)
             value = self._read_list(datatype)
         else:
-            name = '{}:{}'.format(name, typename)
+            # Todo: TAGFORMAT
+            fullname = '{}<{}>'.format(name, typename)
             value = getattr(self, '_read_' + typename)()
-
-        return (name, value)
+        return (fullname, value)
 
     def _read_byte(self):
         return ord(self.file.read(1))
@@ -123,15 +125,8 @@ class Decoder(object):
         return struct.unpack('>d', self.file.read(8))[0]
 
     def _read_bytearray(self):
-        # Todo: implement hexdata.
         length = self._read_int()
-        data = bytearray(self.file.read(length))
-        return data
-
-        if self.hexdata:
-            return ':'.join('{:02x}'.format(byte) for byte in data)
-        else:
-            return data
+        return bytearray(self.file.read(length))
 
     def _read_string(self):
         length = self._read_short()
@@ -161,10 +156,15 @@ class Decoder(object):
             # This makes no sense!
             # level.dat sometimes contains an empty list
             # of type 'end' (typeid == 0). Just skip.
+            # (This seems to be used to mark an empty list.)
             return []
 
         read = getattr(self, '_read_' + datatype)
-        return [read() for _ in range(length)]
+        lst = []
+        for _ in range(length):
+            item = read()
+            lst.append(item)
+
         return lst
 
     def _read_intarray(self):
@@ -179,11 +179,15 @@ class Encoder(object):
         self.data = bytearray()
 
     def encode(self, tag):
-        self._write_tag(':compound', tag)
+        # Todo: TAGFORMAT
+        self._write_tag('<compound>', tag)
         return self.data
 
     def _write_tag(self, name, value):
-        name, typename = name.rsplit(':', 1)
+        # Todo: TAGFORMAT
+        name = name[:-1]
+        name, typename = name.rsplit('<', 1)
+
         if typename.endswith('list'):
             datatype, typename = typename[:-4], typename[-4:]
 
@@ -214,7 +218,6 @@ class Encoder(object):
         self.data.extend(struct.pack('>d', value))
 
     def _write_bytearray(self, value):
-        # Todo: handle hex string.
         self._write_int(len(value))
         self.data.extend(value)
 
@@ -224,14 +227,22 @@ class Encoder(object):
         self.data.extend(data)
 
     def _write_compound(self, tag):
-        for key, value in tag.items():
-            self._write_tag(key, value)
+        for name, value in sorted(tag.items()):
+            self._write_tag(name, value)
         self._write_end()
 
     def _write_list(self, value, datatype):
-        write = getattr(self, '_write_{}'.format(datatype))
-        for item in value:
-            write(item)
+        if len(value) == 0:
+            # Empty list. Type and length are both 0.
+            self._write_byte(0)
+            self._write_int(0)
+        else:
+            typeid = _TYPE_IDS[datatype]
+            self._write_byte(typeid)
+            self._write_int(len(value))
+            write = getattr(self, '_write_{}'.format(datatype))
+            for item in value:
+                write(item)
 
     def _write_intarray(self, value):
         self._write_int(len(value))
