@@ -1,7 +1,7 @@
 import sys
 import json
 from pprint import pprint
-from mcdata.nbt import load, save, Tag
+from mcdata.nbt import load, save, Tag, TagWrapper
 import mcdata
 
 def mkname(name):
@@ -9,12 +9,13 @@ def mkname(name):
 
 if 1:
     data = load(mkname('a'))
+    level = TagWrapper(data)
 
     # data.value['Data']
 
-    print(data['Data']['GameRules']['keepInventory'])
+    print(level['Data/GameRules/keepInventory'])
 
-    pprint(data)
+    # pprint(data)
     # save(mkname('b'), data)
     #data = load(mkname('b'))
     #pprint(data)

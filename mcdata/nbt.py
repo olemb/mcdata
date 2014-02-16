@@ -269,7 +269,35 @@ def load(filename):
 def save(filename, data):
     _gzip.GzipFile(filename, 'wb').write(encode(data))
 
+class TagWrapper(object):
+    """
+    Access tag values directly. Keys must exist.
 
+    Example:
+
+    >>> from mcdata.nbt import load, ValueWrapper
+    >>> ValueWrapper(load('level.dat'))
+    >>> level['Data/GameRules/keepInventory']
+    true
+    >>> level['Data/GameRules/keepInventory'] = 'false'
+    >>> # ... and save
+    """
+
+    def __init__(self, tag):
+        # Todo: name? 'tag'?
+        self.tag = tag   
+
+    def __getitem__(self, path):
+        tag = self.tag
+        for part in path.split('/'):
+            tag = tag[part]
+        return tag.value
+
+    def __setitem__(self, path, value):
+        tag = self.tag
+        for part in path.split('/'):
+            tag = tag[part]
+        tag.value = value
 
 #
 # Everything below here doesn't work yet.
@@ -309,35 +337,5 @@ def keys_only(obj):
         return {name: keys_only(value) for name, value in obj.items()}
     else:
         return ''
-
-class ValueWrapper(object):
-    """
-    Access tag values directly. Keys must exist.
-
-    Example:
-
-    >>> from mcdata.nbt import load, ValueWrapper
-    >>> ValueWrapper(load('level.dat'))
-    >>> level['Data/GameRules/keepInventory']
-    true
-    >>> level['Data/GameRules/keepInventory'] = 'false'
-    >>> # ... and save
-    """
-
-    def __init__(self, tag):
-        # Todo: name? 'tag'?
-        self.tag = tag   
-
-    def __getitem__(self, path):
-        tag = self.tag
-        for part in path.split('/'):
-            tag = tag[part]
-        return tag.value
-
-    def __setitem__(self, path, value):
-        tag = self.tag
-        for part in path.split('/'):
-            tag = tag[part]
-        tag.value = value
 
 _init_types()
