@@ -1,6 +1,10 @@
 Todo
 ----
 
+* rename Tag (and tags) to something else?
+
+* refer to "tag" as "tree"?
+
 * add .mca (Anvil) support.
 
 * support Python 3.
