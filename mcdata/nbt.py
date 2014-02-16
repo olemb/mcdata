@@ -288,4 +288,20 @@ def keys_only(obj):
     else:
         return ''
 
+class ValueWrapper(object):
+    def __init__(self, tag):
+        self.tag = tag   
+
+    def __getitem__(self, path):
+        tag = self.tag
+        for part in path.split('/'):
+            tag = tag[part]
+        return tag.value
+
+    def __setitem__(self, path, value):
+        tag = self.tag
+        for part in path.split('/'):
+            tag = tag[part]
+        tag.value = value
+
 _init_types()
