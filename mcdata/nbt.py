@@ -25,6 +25,8 @@ def _init_types():
         _TYPE_NAMES[i] = name
         _TYPE_IDS[name] = i
 
+_init_types()
+
 def split_path(path):
     return [part for part in path.split('/') if part]
 
@@ -337,117 +339,11 @@ def load(filename):
 def save(filename, data):
     _gzip.GzipFile(filename, 'wb').write(encode(data))
 
-def _tmp_encode_python1(tag):
-    encode = _tmp_encode_python1
-    if tag.type == 'compound':
-        value = {key: encode(value) for key, value in tag.value.items()}
-    elif tag.type == 'list':
-        value = [encode(item) for item in tag.value]
-    else:
-        value = tag.value
-    return [tag.type, value]
+def _hex_encode_bytearray(array):
+    return ':'.join('{:02x}'.format(byte) for byte in obj)
 
-def _tmp_encode_typeless_python(tag, keys_only=False):
-    """Encode tags as Python with types removed.
-    
-    This can't be encoded back to NBT.q
-    """
-    encode = lambda t: _tmp_encode_typeless_python(t, keys_only=keys_only)
+# def _hex_decode_bytearray(string):
+#     raise NotImplemented
 
-    if tag.type == 'compound':
-        value = {key: encode(value) for key, value in tag.value.items()}
-    elif tag.type == 'list':
-        value = [encode(item) for item in tag.value]
-    else:
-        if keys_only:
-            value = ''
-        else:
-            value = tag.value
-    return value
-
-class TagWrapper(object):
-    """
-    Access tag values directly. Keys must exist.
-
-    Example:
-
-    >>> from mcdata.nbt import load, ValueWrapper
-    >>> ValueWrapper(load('level.dat'))
-    >>> level['Data/GameRules/keepInventory']
-    true
-    >>> level['Data/GameRules/keepInventory'] = 'false'
-    >>> # ... and save
-    """
-
-    def __init__(self, tag):
-        # Todo: name? 'tag'?
-        self.tag = tag   
-
-    def __getitem__(self, path):
-        tag = self.tag
-        for part in path.split('/'):
-            tag = tag.value[part]
-        return tag.value
-
-    def __setitem__(self, path, value):
-        tag = self.tag
-        for part in path.split('/'):
-            tag = tag.value[part]
-        tag.value = value
-
-def print_structure(tag, indent=0):
-    if tag.type == 'compound':
-        for name in sorted(tag.value.keys()):
-            child = tag.value[name]
-            if child.type in ['compound', 'list', 'bytearray', 'intarray']:
-                if len(child.value) == 1:
-                    plural = ''
-                else:
-                    plural = 's'
-                length = '[{}]'.format(len(child.value))
-            else:
-                length = ''
-
-            print('{}{} <{}{}>'.format('.' * indent, name, child.type, length))
-            print_structure(tag.value[name], indent + 1)
-
-#
-# Everything below here doesn't work yet.
-#
-
-
-def _hex_encode_bytearrays(obj):
-    """Replace all bytearrays in an NBT tree with hex strings."""
-    fix = _hex_encode_bytearrays
-
-    if isinstance(obj, dict):
-        return {name: fix(value) for name, value in obj.items()}
-    elif isinstance(obj, list):
-        return [fix(value) for value in obj]
-    elif isinstance(obj, bytearray):
-        return ':'.join('{:02x}'.format(byte) for byte in obj)
-    else:
-        return obj
-
-def _hex_decode_bytearrays(obj):
-    """Decode all hex encoded bytearrays."""
-    raise NotImplemented
-
-def encode_json(data, indent=True):
-    """Encode NBT data as JSON.
-
-    The data will be indented with 2 spaces.
-    Byte arrays are hex encoded."""
-    data = _hex_encode_bytearrays(data)
-    return _json.dumps(data, indent=2, sort_keys=True)
-
-def decode_json(string):
-    raise NotImplemented
-
-def keys_only(obj):
-    if isinstance(obj, dict):
-        return {name: keys_only(value) for name, value in obj.items()}
-    else:
-        return ''
-
-_init_types()
+# JSON:
+#     return _json.dumps(data, indent=2, sort_keys=True)
