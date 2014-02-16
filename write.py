@@ -10,5 +10,5 @@ def mkname(name):
 if 1:
     data = load(mkname('a'))
     save(mkname('b'), data)
-    load(mkname('b'))
-
+    data = load(mkname('b'))
+    pprint(data)

@@ -169,15 +169,24 @@ def _get_type_and_value(tag):
     else:
         return tag.type, tag.value
 
+class DebugByteArray(bytearray):
+    def append(self, byte):
+        print(repr(byte))
+    def extend(self, bytes):
+        for byte in bytes:
+            self.append(byte)
+
 class Encoder(object):
     def __init__(self):
         self.data = None
 
     def encode(self, tag):
         self.data = bytearray()
+        # self.data = DebugByteArray()
+
         # The outer compound has no name.
         self._write_byte(_TYPE_IDS['compound'])
-        self._write_int(0)
+        self._write_string('')
         self._write_compound(tag)
 
         # Todo: support Python 3.
