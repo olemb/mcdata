@@ -81,30 +81,23 @@ class Decoder(object):
         # self.file = TagFileDebugger(self.file)
 
     def decode(self):
-        # This assumes that the outer tag is a compound.
-        # Return its value.
-        data = self._read_tag()[1]
+        # Skip outer compound type and name.
+        # Todo: check if this is 0 and ''.
+        self._read_byte()
+        self._read_string()
+
+        data = self._read_compound()
         # print(self.datalen - self.file.tell(), 'bytes left')
         return data
 
-    def _read_tag(self):
-        # print('=== NEW TAG')
-        typeid = ord(self.file.read(1))
-        if typeid == 0:
-            raise StopIteration
+    def _read_tag(self, typename):
+        read = getattr(self, '_read_' + typename)
+        tag = Tag(typename, read())
 
-        typename = _TYPE_NAMES[typeid] 
-        name = self._read_string()
-
-        if typename == 'list':
-            datatype = _TYPE_NAMES[self._read_byte()]
-            tag = self._read_list(datatype)
-        elif typename == 'compound':
-            tag = self._read_compound()
+        if tag.type in ['list', 'compound']:
+            return tag.value
         else:
-            tag = Tag(typename, getattr(self, '_read_' + typename)())
-
-        return (name, tag)
+            return tag
 
     def _read_byte(self):
         return ord(self.file.read(1))
@@ -141,7 +134,11 @@ class Decoder(object):
         compound = {}
         try:
             while True:
-                name, value = self._read_tag()
+                typename = _TYPE_NAMES[self._read_byte()]
+                if typename == 'end':
+                    break
+                name = self._read_string()
+                value = self._read_tag(typename)
                 compound[name] = value
         except StopIteration:
             # Why do we have to do this?
@@ -149,7 +146,8 @@ class Decoder(object):
             pass
         return compound
 
-    def _read_list(self, datatype):
+    def _read_list(self):
+        datatype = _TYPE_NAMES[self._read_byte()]
         length = self._read_int()
         if length == 0:
             # Note: if length is 0 the datatype is 0,
@@ -157,37 +155,33 @@ class Decoder(object):
             # of an empty list.
             return []
 
-        read = getattr(self, '_read_' + datatype)
-        return [read() for _ in range(length)]
+        return [self._read_tag(datatype) for _ in range(length)]
 
     def _read_intarray(self):
         length = self._read_int()
         return [self._read_int() for _ in range(length)]
 
+def _get_type_and_value(tag):
+    if isinstance(tag, dict):
+        return 'compound', tag
+    elif isinstance(tag, list):
+        return 'list', tag
+    else:
+        return tag.type, tag.value
+
 class Encoder(object):
     def __init__(self):
-        self.data = bytearray()
+        self.data = None
 
     def encode(self, tag):
-        # Todo: TAGFORMAT
-        self._write_tag('<compound>', tag)
-        return self.data
+        self.data = bytearray()
+        # The outer compound has no name.
+        self._write_byte(_TYPE_IDS['compound'])
+        self._write_int(0)
+        self._write_compound(tag)
 
-    def _write_tag(self, name, value):
-        # Todo: TAGFORMAT
-        name = name[:-1]
-        name, typename = name.rsplit('<', 1)
-
-        if typename.endswith('list'):
-            datatype, typename = typename[:-4], typename[-4:]
-
-        self.data.append(_TYPE_IDS[typename])
-        self._write_string(name)
-
-        if typename == 'list':
-            self._write_list(value, datatype)
-        else:
-            getattr(self, '_write_{}'.format(typename))(value)
+        # Todo: support Python 3.
+        return str(self.data)
 
     def _write_byte(self, value):
         self.data.append(value)
@@ -207,40 +201,48 @@ class Encoder(object):
     def _write_double(self, value):
         self.data.extend(_struct.pack('>d', value))
 
-    def _write_bytearray(self, value):
-        self._write_int(len(value))
-        self.data.extend(value)
+    def _write_bytearray(self, array):
+        self._write_int(len(array))
+        self.data.extend(array)
 
     def _write_string(self, value):
         data = value.encode('UTF-8')
         self._write_short(len(data))
         self.data.extend(data)
 
-    def _write_compound(self, tag):
-        for name, value in sorted(tag.items()):
-            self._write_tag(name, value)
-        self._write_end()
+    def _write_compound(self, compound):
+        for name, tag in sorted(compound.items()):
+            typename, value = _get_type_and_value(tag)
 
-    def _write_list(self, value, datatype):
-        if len(value) == 0:
+            self.data.append(_TYPE_IDS[typename])  # Type byte.
+            self._write_string(name)
+            getattr(self, '_write_{}'.format(typename))(value)
+            
+        self.data.append(0)  # End tag.
+
+    def _write_list(self, lst):
+        if len(lst) == 0:
             # Empty list. Type and length are both 0.
             self._write_byte(0)
             self._write_int(0)
         else:
+            # Get datatype from first element.
+            # Todo: check if all elements are of the same type.
+            datatype, _ = _get_type_and_value(lst[0])
             typeid = _TYPE_IDS[datatype]
+
             self._write_byte(typeid)
-            self._write_int(len(value))
+            self._write_int(len(lst))
+
             write = getattr(self, '_write_{}'.format(datatype))
-            for item in value:
-                write(item)
+            for item in lst:
+                _, value = _get_type_and_value(item)
+                write(value)
 
-    def _write_intarray(self, value):
-        self._write_int(len(value))
-        for n in value:
+    def _write_intarray(self, array):
+        self._write_int(len(array))
+        for n in array:
             self._write_int(n)
-
-    def _write_end(self):
-        self.data.append(0)
 
 def decode(data):
     return Decoder(data).decode()
@@ -252,7 +254,14 @@ def load(filename):
     return decode(_gzip.GzipFile(filename, 'rb').read())
 
 def save(filename, data):
-    _gzip.GzipFile(filename, 'wb').write(str(encode(data)))
+    _gzip.GzipFile(filename, 'wb').write(encode(data))
+
+
+
+#
+# Everything below here doesn't work yet.
+#
+
 
 def _hex_encode_bytearrays(obj):
     """Replace all bytearrays in an NBT tree with hex strings."""
