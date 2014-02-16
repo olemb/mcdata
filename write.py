@@ -15,8 +15,11 @@ if 1:
 
     # print(level['Data/GameRules/keepInventory'])
 
-    pprint(nbt._tmp_encode_typeless_python(data,
-                                           keys_only=True))
+    #pprint(nbt._tmp_encode_typeless_python(data,
+    #                                       keys_only=True))
+
+    nbt.print_structure(data)
+
     # save(mkname('b'), data)
     #data = load(mkname('b'))
     #pprint(data)

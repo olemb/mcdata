@@ -318,6 +318,22 @@ class TagWrapper(object):
             tag = tag.value[part]
         tag.value = value
 
+def print_structure(tag, indent=0):
+    if tag.type == 'compound':
+        for name in sorted(tag.value.keys()):
+            child = tag.value[name]
+            if child.type in ['compound', 'list', 'bytearray', 'intarray']:
+                if len(child.value) == 1:
+                    plural = ''
+                else:
+                    plural = 's'
+                length = '[{}]'.format(len(child.value))
+            else:
+                length = ''
+
+            print('{}{} <{}{}>'.format('.' * indent, name, child.type, length))
+            print_structure(tag.value[name], indent + 1)
+
 #
 # Everything below here doesn't work yet.
 #
