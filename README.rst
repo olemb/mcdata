@@ -1,3 +1,21 @@
+mcdata
+======
+
+Experminental library for reading and writing Minecraft data files.
+
+This implements the NBT (Named Binary Tags) and Anvil formats.
+
+
+Contact
+-------
+
+Ole Martin Bjorndalen
+
+ombdalen@gmail.com
+
+http://github.com/olemb/mcdata
+
+
 Todo
 ----
 
