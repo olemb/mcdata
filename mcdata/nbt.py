@@ -48,6 +48,46 @@ class Tag(object):
             # Todo: are there ever spaces in tag names?
             yield (tag, '/' + '/'.join(path))
 
+    # Todo: keys()
+
+    def __getitem__(self, path):
+        if not self.type in ['compound', 'list']:
+            # Todo: more informative message?
+            raise ValueError("{} tag doesn't support lookup".format(self.type))
+
+        # Todo: handle ValueError and TypeError.
+
+        if path[:1] != '/':
+            raise KeyError(path)
+
+        parts = [part for part in path.split('/') if part]
+
+        tag = self
+        for part in parts:
+            if tag.type == 'compound':
+                try:
+                    tag = tag.value[part]
+                except KeyError:
+                    raise KeyError(path)
+            elif tag.type == 'list':
+                try:
+                    tag.value[int(part)]
+                except (ValueError, IndexError):
+                    raise KeyError(path)
+            else:
+                raise KeyError(path)
+        
+        return tag
+
+    def __setitem__(self, name, value):
+        if not self.type in ['compound', 'list']:
+            # Todo: more informative message?
+            raise ValueError("{} tag doesn't support lookup".format(self.type))
+        elif not isinstance(value, Tag):
+            raise ValueError('value must be Tag')
+    
+        # Todo: set item.
+
     def __repr__(self):
         if self.type == 'compound':
             value = '{{{} items}}'.format(len(self.value))
