@@ -33,7 +33,14 @@ def split_path(path):
 def canonize_path(path):
     return '/' + '/'.join(path)
 
-class Compound(dict):
+class Collection(object):
+    """Common base class for Compound and List.
+
+    Used for isinstance().
+    """
+    pass
+
+class Compound(dict, Collection):
     def __init__(self, items=None, **kw):
         self.types = {}
         if items is not None:
@@ -77,7 +84,7 @@ class Compound(dict):
     # deepcopy()
     # update()
 
-class List(list):
+class List(list, Collection):
     def __init__(self, type, items=None):
         self.type = type
         if items is not None:
