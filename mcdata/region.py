@@ -54,6 +54,9 @@ class RegionFile(object):
         return headers
 
     def _read_chunk(self, pos):
+        # Todo: this test is already done in __iter__().
+        # Also, what should happen if the chunk doesn't exist?
+        # (Exception probably.)
         header = self.headers[pos]
         if header.offset == 0:
             return {}
@@ -76,7 +79,8 @@ class RegionFile(object):
 
     def __iter__(self):
         for i in range(NUM_CHUNKS):
-            yield self._read_chunk(i)
+            if self.headers[i].offset != 0:
+                yield self._read_chunk(i)
 
     def __enter__(self):
         return self
