@@ -348,6 +348,9 @@ def print_tree(tree):
     for path, typename, value in walk(tree):
         words = [path]
 
+        if typename == 'list':
+            typename = 'list:{}'.format(value.type or '')
+
         try:
             words.append('<{}[{}]>'.format(typename, len(value)))
         except TypeError:
