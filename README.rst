@@ -29,13 +29,8 @@ Todo
 
 * error checking: raise exception if there are bytes left over after decoding.
 
-* rename tag to something else. (obj?)
-
-* enter / exit for RegionFile.
-
 * JSON support?
 
+* give Compound and List meaningful __repr__() values.
+
 * "# Todo:" items in code.
-
-* include types in pprint() output?
-
