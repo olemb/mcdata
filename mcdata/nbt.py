@@ -217,6 +217,14 @@ class Encoder(object):
     def __init__(self):
         self.data = None
 
+        # Get all _write_*() methods in a neat lookup table.
+        # Todo: this is duplicated in the Decoder. Unduplicate.
+        self._writers = {}
+        for name in dir(self):
+            if name.startswith('_write'):
+                typename = name.rsplit('_', 1)[1]
+                self._writers[typename] = getattr(self, name)
+
     def encode(self, tag):
         self.data = bytearray()
         # self.data = DebugByteArray()
@@ -224,13 +232,10 @@ class Encoder(object):
         # The outer compound has no name.
         self._write_byte(_TYPE_IDS['compound'])
         self._write_string('')
-        self._write_tag(tag)
+        self._writers['compound'](tag)
 
         # Todo: support Python 3.
         return str(self.data)
-
-    def _write_tag(self, tag):
-        getattr(self, '_write_{}'.format(tag.type))(tag.value)
 
     def _write_byte(self, value):
         self.data.append(value)
@@ -260,10 +265,11 @@ class Encoder(object):
         self.data.extend(data)
 
     def _write_compound(self, compound):
-        for name, tag in sorted(compound.items()):
-            self.data.append(_TYPE_IDS[tag.type])  # Type byte.
+        for name, value in sorted(compound.items()):
+            typename = compound.types[name]
+            self.data.append(_TYPE_IDS[typename])
             self._write_string(name)
-            self._write_tag(tag)
+            self._writers[compound.types[name]](value)
             
         self.data.append(0)  # End tag.
 
@@ -273,16 +279,15 @@ class Encoder(object):
             self._write_byte(0)
             self._write_int(0)
         else:
-            # Get datatype from first element.
-            # Todo: check if all elements are of the same type.
-            datatype, _ = lst[0].type
-            typeid = _TYPE_IDS[datatype]
+            if lst.type is None:
+                raise ValueError("non-empty list must have type != None")
 
-            self._write_byte(typeid)
+            datatype = lst.type
+            self._write_byte(_TYPE_IDS[datatype])
             self._write_int(len(lst))
 
-            for tag in lst:
-                self._write_tag(tag)
+            for value in lst:
+                self._writers[datatype](value)
 
     def _write_intarray(self, array):
         self._write_int(len(array))
