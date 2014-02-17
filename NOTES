@@ -26,6 +26,11 @@ populated section above?
 /Level/Sections/0/Data  <bytearray[2048]>        # 4 bit per block
 /Level/Sections/0/SkyLight  <bytearray[2048]>    # 4 bit per block
 /Level/Sections/0/Y <byte> 0  # Same as list index.
+/Level/TerrainPopulated  <byte>   # 0 or 1
+/Level/TileEntities  <list:[0]>  # Animals and such?
+/Level/V  <byte>  1
+/Level/xPos  <int>  0  # These can be accessed with Chunk.x and Chunk.z.
+/Level/zPos  <int>  0
 
 
 Creating a world with only one block
