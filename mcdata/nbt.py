@@ -50,8 +50,8 @@ class Compound(dict, Collection):
         for name, (type, value) in kw.items():
             self.add(name, type, value)
 
-    # def get_type(self, name):                                                 
-    #     return self.types[name]                                               
+    # def get_type(self, name): 
+    #     return self.types[name]
 
     def add(self, name, type, value):
         self.types[name] = type

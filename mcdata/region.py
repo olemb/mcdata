@@ -35,6 +35,29 @@ class ChunkHeader(object):
                           self.sector_count,
                           self.timestamp)
 
+class Chunk(object):
+    # Todo: create empty chunk if data is None?
+    # Todo: load data on demand?
+    def __init__(self, data):
+        self.data = data
+
+    @property
+    def x(self):
+        return self.data['Level']['xPos']
+
+    @x.setter
+    def x(self, value):
+        self.data['Level']['xPos'] = value
+
+    @property
+    def y(self):
+        return self.data['Level']['yPos']
+
+    @y.setter
+    def y(self, value):
+        self.data['Level']['yPos'] = value
+
+
 class RegionFile(object):
     def __init__(self, filename, mode='rb'):
         self.file = open(filename, mode)
@@ -54,10 +77,6 @@ class RegionFile(object):
 
         return headers
 
-    def iter_chunk_data(self):
-        for i in range(NUM_CHUNKS):
-            yield self._read_chunk(i)
-
     def _read_chunk(self, pos):
         header = self.headers[pos]
         if header.offset == 0:
@@ -69,7 +88,7 @@ class RegionFile(object):
         compression = self._read_int(1)
         data = _zlib.decompress(self.file.read(length-1))
 
-        return _nbt.decode(data)
+        return Chunk(_nbt.decode(data))
 
     def _read_int(self, numbytes):
         value = 0
@@ -78,6 +97,10 @@ class RegionFile(object):
             value |= ord(self.file.read(1))
             numbytes -= 1
         return value
+
+    def __iter__(self):
+        for i in range(NUM_CHUNKS):
+            yield self._read_chunk(i)
 
     def __enter__(self):
         return self
