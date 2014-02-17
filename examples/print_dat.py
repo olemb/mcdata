@@ -8,7 +8,7 @@ from mcdata import nbt
 from mcdata.nbt import Collection, Compound, List
 
 def walk(comp):
-    todo = [('', 'collection', comp)]
+    todo = [('', 'compound', comp)]
 
     while todo:
         (path, typename, value) = todo.pop()
