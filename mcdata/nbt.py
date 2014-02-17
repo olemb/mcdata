@@ -21,7 +21,6 @@ def _init_types():
                               'list',
                               'compound',
                               'intarray']):
-
         _TYPE_NAMES[i] = name
         _TYPE_IDS[name] = i
 
@@ -147,6 +146,8 @@ class Decoder(object):
                 typename = name.rsplit('_', 1)[1]
                 self._readers[typename] = getattr(self, name)
 
+        self._read = self.file.read  # Shortcut for speed.
+
     def decode(self):
         # Skip outer compound type and name.
         # Todo: check if this is 0 and ''.
@@ -157,31 +158,31 @@ class Decoder(object):
         return tag
 
     def _read_byte(self):
-        return ord(self.file.read(1))
+        return ord(self._read(1))
 
     def _read_short(self):
-        return _struct.unpack('>h', self.file.read(2))[0]
+        return _struct.unpack('>h', self._read(2))[0]
 
     def _read_int(self):
-        return _struct.unpack('>i', self.file.read(4))[0]
+        return _struct.unpack('>i', self._read(4))[0]
 
     def _read_long(self):
-        return _struct.unpack('>q', self.file.read(8))[0]
+        return _struct.unpack('>q', self._read(8))[0]
 
     def _read_float(self):
-        return _struct.unpack('>f', self.file.read(4))[0]
+        return _struct.unpack('>f', self._read(4))[0]
 
     def _read_double(self):
-        return _struct.unpack('>d', self.file.read(8))[0]
+        return _struct.unpack('>d', self._read(8))[0]
 
     def _read_bytearray(self):
         length = self._read_int()
-        return bytearray(self.file.read(length))
+        return bytearray(self._read(length))
 
     def _read_string(self):
         length = self._read_short()
         if length:
-            data = self.file.read(length)
+            data = self._read(length)
             string = data.decode('UTF-8')
             return string
         else:
