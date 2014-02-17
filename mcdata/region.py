@@ -78,3 +78,10 @@ class RegionFile(object):
             value |= ord(self.file.read(1))
             numbytes -= 1
         return value
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.file.close()
+        return False

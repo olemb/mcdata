@@ -11,6 +11,6 @@ from mcdata.region import RegionFile
 
 for filename in sys.argv[1:]:
     print('# File: {}'.format(filename))
-    rfile = RegionFile(filename)
-    for chunk in rfile.iter_chunk_data():
-        print_tree(chunk)
+    with RegionFile(filename) as region:
+        for chunk in region.iter_chunk_data():
+            print_tree(chunk)
