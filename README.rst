@@ -1,9 +1,11 @@
 mcdata
 ======
 
-Experminental library for reading and writing Minecraft data files.
+Experimental library for reading and writing Minecraft data files.
 
 This implements the NBT (Named Binary Tags) and Anvil formats.
+
+*NOTE!* This is a very early version. The API will probably change.
 
 
 Contact
