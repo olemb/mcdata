@@ -33,94 +33,55 @@ def split_path(path):
 def canonize_path(path):
     return '/' + '/'.join(path)
 
-class Tag(object):
-    def __init__(self, type, value):
+class Compound(dict):
+    def __init__(self, items=None, **kw):
+        self.types = {}
+        if items is not None:
+            for (name, type, value) in items:
+                self.add(name, type, value)
+
+        for name, (type, value) in kw.items():
+            self.add(name, type, value)
+
+    # def get_type(self, name):                                                 
+    #     return self.types[name]                                               
+
+    def add(self, name, type, value):
+        self.types[name] = type
+        dict.__setitem__(self, name, value)
+
+    def __setitem__(self, name, value):
+        if name in self:
+            dict.__setattr__(self, name, value)
+        else:
+            raise KeyError(name)
+
+    def __delitem__(self, name):
+        if name in self:
+            dict.__delattr__(self, name)
+            del self.types[name]
+        else:
+            raise KeyError(name)
+
+    def copy(self):
+        # Todo: check if this works
+        other = Compound()
+        other.types = self.types.copy()
+        list.update(other, self)
+        return other
+
+    # Todo: __repr__()
+
+    # deepcopy()
+    # update()
+
+class List(list):
+    def __init__(self, type, items=None):
         self.type = type
-        self.value = value
-        if isinstance(value, Tag):
-            raise ValueError()
+        if items is not None:
+            self.extend(items)
 
-    def walk(self):
-        todo = [(self, [])]
-
-        while todo:
-            (tag, path) = todo.pop()
-            if tag.type == 'compound':
-                # Add all values.
-                for name in sorted(tag.value.keys(), reverse=True):
-                    todo.append((tag.value[name], path + [name]))
-            elif tag.type == 'list':
-                for i, subtag in enumerate(reversed(tag.value)):
-                    todo.append((subtag, path + [str(i)]))
-
-            # Todo: are there ever spaces in tag names?
-            yield (tag, canonize_path(path))
-
-    def keys(self):
-        for _, path in self.walk():
-            yield path
-
-    def __getitem__(self, path):
-        if not self.type in ['compound', 'list']:
-            # Todo: more informative message?
-            raise ValueError("{} tag doesn't support lookup".format(self.type))
-
-        # Todo: handle ValueError and TypeError.
-
-        if path[:1] != '/':
-            raise KeyError(path)
-
-        tag = self
-        for part in split_path(path):
-            if tag.type == 'compound':
-                try:
-                    tag = tag.value[part]
-                except KeyError:
-                    raise KeyError(path)
-            elif tag.type == 'list':
-                try:
-                    tag = tag.value[int(part)]
-                except (ValueError, IndexError):
-                    raise KeyError(path)
-            else:
-                raise KeyError(path)
-
-        return tag
-        
-    def __setitem__(self, path, tag):
-        if not self.type in ['compound', 'list']:
-            # Todo: more informative message?
-            raise ValueError("{} tag doesn't support lookup".format(self.type))
-        elif not isinstance(tag, Tag):
-            raise ValueError('value must be Tag')
-    
-        parts = split_path(path)
-        if len(parts) < 1:
-            raise KeyError(path)
-
-        curtag = self
-        for part in parts[:-1]:
-            curtag = curtag.value[part]
-
-        if curtag.type == 'compound':
-            curtag.value[parts[-1]] = tag
-        elif curtag.type == 'list':
-            try:
-                curtag.value[int(parts[-1])]
-            except (ValueError, IndexError):
-                raise KeyError(path)
-        else:
-            raise KeyError(path)
-
-    def __repr__(self):
-        if self.type == 'compound':
-            value = '{{{} items}}'.format(len(self.value))
-        elif self.type == 'list':
-            value = '[{} items]'.format(len(self.value))
-        else:
-            value = repr(self.value)
-        return '<{} {}>'.format(self.type, value)
-
+    # Todo: __repr__()
 
 class TagFile(object):
     def __init__(self, data):
@@ -169,19 +130,21 @@ class Decoder(object):
         self.file = TagFile(data)
         # self.file = TagFileDebugger(self.file)
 
+        # Get all _read_*() methods in a neat lookup table.
+        self._readers = {}
+        for name in dir(self):
+            if name.startswith('_read'):
+                typename = name.rsplit('_', 1)[1]
+                self._readers[typename] = getattr(self, name)
+
     def decode(self):
         # Skip outer compound type and name.
         # Todo: check if this is 0 and ''.
         self._read_byte()
         self._read_string()
-        data = self._read_tag('compound')
+        tag = self._readers['compound']()
         # print(self.datalen - self.file.tell(), 'bytes left')
-        return data
-
-    def _read_tag(self, typename):
-        """Read data for tag."""
-        read = getattr(self, '_read_' + typename)
-        return Tag(typename, read())
+        return tag
 
     def _read_byte(self):
         return ord(self.file.read(1))
@@ -215,18 +178,14 @@ class Decoder(object):
             return u''
 
     def _read_compound(self):
-        compound = {}
-        try:
-            while True:
-                typename = _TYPE_NAMES[self._read_byte()]
-                if typename == 'end':
-                    break
-                name = self._read_string()
-                compound[name] = self._read_tag(typename)
-        except StopIteration:
-            # Why do we have to do this?
-            # Shouldn't that happen automatically?
-            pass
+        compound = Compound()
+        while True:
+            typename = _TYPE_NAMES[self._read_byte()]
+            if typename == 'end':
+                break
+            name = self._read_string()
+            compound.add(name, typename, self._readers[typename]())
+
         return compound
 
     def _read_list(self):
@@ -236,9 +195,10 @@ class Decoder(object):
             # Note: if length is 0 the datatype is 0,
             # which means you can't determine the data type
             # of an empty list.
-            return []
+            return List(None)
 
-        return [self._read_tag(datatype) for _ in range(length)]
+        return List(datatype,
+                    [self._readers[datatype]() for _ in range(length)])
 
     def _read_intarray(self):
         length = self._read_int()
