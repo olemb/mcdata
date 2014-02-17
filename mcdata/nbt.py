@@ -346,9 +346,17 @@ def walk(comp):
 
 def print_tree(tree):
     for path, typename, value in walk(tree):
-        if typename in ['compound', 'list']:
-            print('{}  ({})'.format(path, typename))
-        else:
+        words = [path]
+
+        try:
+            words.append('<{}[{}]>'.format(typename, len(value)))
+        except TypeError:
+            words.append('<{}>'.format(typename))
+
+        if not isinstance(value, Collection):
             if isinstance(value, bytearray):
-                value = _hex_encode_bytearray(value)
-            print('{}  ({})  {!r}'.format(path, typename, value))
+                words.append(_hex_encode_bytearray(value))
+            else:
+                words.append(repr(value))
+
+        print('  '.join(words))
