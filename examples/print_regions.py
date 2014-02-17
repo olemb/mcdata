@@ -13,4 +13,4 @@ for filename in sys.argv[1:]:
     print('# File: {}'.format(filename))
     with RegionFile(filename) as region:
         for chunk in region:
-            print_tree(chunk.data)
+            print_tree(chunk)
