@@ -314,10 +314,7 @@ def save(filename, data):
     _gzip.GzipFile(filename, 'wb').write(encode(data))
 
 def _hex_encode_bytearray(array):
-    return ':'.join('{:02x}'.format(byte) for byte in obj)
-
-# def _hex_decode_bytearray(string):
-#     raise NotImplemented
+    return ':'.join('{:02x}'.format(byte) for byte in array)
 
 # JSON:
 #     return _json.dumps(data, indent=2, sort_keys=True)
@@ -352,4 +349,6 @@ def print_tree(tree):
         if typename in ['compound', 'list']:
             print('{}  ({})'.format(path, typename))
         else:
+            if isinstance(value, bytearray):
+                value = _hex_encode_bytearray(value)
             print('{}  ({})  {!r}'.format(path, typename, value))
