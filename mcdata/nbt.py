@@ -1,4 +1,5 @@
 from __future__ import print_function
+import io as _io
 import sys as _sys  # Used for debugging.
 import gzip as _gzip
 import json as _json
@@ -92,19 +93,6 @@ class List(list, Collection):
 
     # Todo: __repr__()
 
-class TagFile(object):
-    def __init__(self, data):
-        self.pos = 0
-        self.data = data
-    
-    def tell(self):
-        return self.pos
-
-    def read(self, length):
-        data = self.data[self.pos:self.pos+length]
-        self.pos += length
-        return data
-
 class TagFileDebugger(object):
     """Wraps around TagFile."""
     def __init__(self, file):
@@ -136,7 +124,7 @@ class TagFileDebugger(object):
 class Decoder(object):
     def __init__(self, data):
         self.datalen = len(data)
-        self.file = TagFile(data)
+        self.file = _io.BytesIO(data)
         # self.file = TagFileDebugger(self.file)
 
         # Get all _read_*() methods in a neat lookup table.
@@ -244,7 +232,7 @@ class Encoder(object):
         self._writers['compound'](tag)
 
         # Todo: support Python 3.
-        return str(self.data)
+        return bytes(self.data)
 
     def _write_byte(self, value):
         self.data.append(value)
