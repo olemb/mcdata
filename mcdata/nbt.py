@@ -72,6 +72,8 @@ class Compound(dict):
 
     # Todo: __repr__()
 
+    # check()  # performs sanity checking on data. (Valid type, range etc.)
+
     # deepcopy()
     # update()
 
