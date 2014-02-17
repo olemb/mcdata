@@ -314,9 +314,6 @@ def load(filename):
 def save(filename, data):
     _gzip.GzipFile(filename, 'wb').write(encode(data))
 
-def _hex_encode_bytearray(array):
-    return ':'.join('{:02x}'.format(byte) for byte in array)
-
 # JSON:
 #     return _json.dumps(data, indent=2, sort_keys=True)
 
@@ -345,6 +342,9 @@ def walk(comp):
                             typename,
                             value))
 
+def _format_bytearray(array):
+    return ','.join(str(byte) for byte in array)
+
 def print_tree(tree):
     for path, typename, value in walk(tree):
         words = [path]
@@ -359,7 +359,7 @@ def print_tree(tree):
 
         if not isinstance(value, Collection):
             if isinstance(value, bytearray):
-                words.append(_hex_encode_bytearray(value))
+                words.append(_format_bytearray(value))
             else:
                 words.append(repr(value))
 
