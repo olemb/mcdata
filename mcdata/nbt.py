@@ -338,7 +338,7 @@ def walk(comp):
         elif isinstance(tag, List):
             typename = tag.type
             i = len(tag)
-            for value in tag:
+            for value in reversed(tag):
                 i -= 1
                 todo.append(('{}/{}'.format(path, i),
                             typename,
