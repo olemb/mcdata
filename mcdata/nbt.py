@@ -58,14 +58,15 @@ class Compound(dict, Collection):
         dict.__setitem__(self, name, value)
 
     def __setitem__(self, name, value):
+        print(name, value)
         if name in self:
-            dict.__setattr__(self, name, value)
+            dict.__setitem__(self, name, value)
         else:
             raise KeyError(name)
 
     def __delitem__(self, name):
         if name in self:
-            dict.__delattr__(self, name)
+            dict.__delitem__(self, name)
             del self.types[name]
         else:
             raise KeyError(name)
