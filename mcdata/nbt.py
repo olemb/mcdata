@@ -321,3 +321,35 @@ def _hex_encode_bytearray(array):
 
 # JSON:
 #     return _json.dumps(data, indent=2, sort_keys=True)
+
+def walk(comp):
+    todo = [('', 'compound', comp)]
+
+    while todo:
+        (path, typename, value) = todo.pop()
+        yield (path or '/', typename, value)
+
+        tag = value
+
+        if isinstance(tag, Compound):
+            for name in sorted(tag, reverse=True):
+                typename = tag.types[name]
+                value = tag[name]
+                todo.append(('{}/{}'.format(path, name),
+                             typename,
+                             value))
+        elif isinstance(tag, List):
+            typename = tag.type
+            i = len(tag)
+            for value in tag:
+                i -= 1
+                todo.append(('{}/{}'.format(path, i),
+                            typename,
+                            value))
+
+def print_tree(tree):
+    for path, typename, value in walk(tree):
+        if typename in ['compound', 'list']:
+            print('{}  ({})'.format(path, typename))
+        else:
+            print('{}  ({})  {!r}'.format(path, typename, value))
