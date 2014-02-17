@@ -1,3 +1,6 @@
+Chunks
+------
+
 A chunk is made up of 16 * 256 * 16 blocks divided into vertical sections.
 
 A section is a 16 blocks high slice of the chunk, with section 0 at
@@ -23,3 +26,8 @@ populated section above?
 /Level/Sections/0/Data  <bytearray[2048]>        # 4 bit per block
 /Level/Sections/0/SkyLight  <bytearray[2048]>    # 4 bit per block
 /Level/Sections/0/Y <byte> 0  # Same as list index.
+
+
+Presets
+-------
+
