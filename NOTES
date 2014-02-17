@@ -28,6 +28,13 @@ populated section above?
 /Level/Sections/0/Y <byte> 0  # Same as list index.
 
 
-Presets
--------
+Creating a world with only one block
+------------------------------------
 
+Superflat preset:  2;0;1;
+(Creative mode, turn off structures.)
+
+/setblock 0 0 0 minecraft:stone﻿
+# /setblock ~ ~ ~ minecraft:stone﻿
+
+/tp NAME 0.5 10.5 0.5
