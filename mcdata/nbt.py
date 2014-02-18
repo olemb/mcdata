@@ -3,35 +3,15 @@ import io as _io
 import sys as _sys  # Used for debugging.
 import gzip as _gzip
 import json as _json
-import struct as _struct
+from struct import Struct as _Struct
 
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
+_READERS = {}
+# Todo: better name.
+_STRUCTS = {fmt: _Struct(fmt) for fmt in ['>b', '>h', '>i', '>q', '>f', '>d']}
+END = 0
 
-def _init_types():
-    """Initialize type lookup tables."""
-    for i, name in enumerate(['end',
-                              'byte',
-                              'short',
-                              'int',
-                              'long',
-                              'float',
-                              'double',
-                              'bytearray',
-                              'string',
-                              'list',
-                              'compound',
-                              'intarray']):
-        _TYPE_NAMES[i] = name
-        _TYPE_IDS[name] = i
-
-_init_types()
-
-def split_path(path):
-    return [part for part in path.split('/') if part]
-
-def canonize_path(path):
-    return '/' + '/'.join(path)
 
 class Collection(object):
     """Common base class for Compound and List.
@@ -39,6 +19,7 @@ class Collection(object):
     Used for isinstance().
     """
     pass
+
 
 class Compound(dict, Collection):
     def __init__(self, items=None, **kw):
@@ -85,6 +66,7 @@ class Compound(dict, Collection):
     # deepcopy()
     # update()
 
+
 class List(list, Collection):
     def __init__(self, type, items=None):
         self.type = type
@@ -92,6 +74,7 @@ class List(list, Collection):
             self.extend(items)
 
     # Todo: __repr__()
+
 
 class TagFileDebugger(object):
     """Wraps around TagFile."""
@@ -121,87 +104,129 @@ class TagFileDebugger(object):
 
         return data
 
-class Decoder(object):
-    def __init__(self, data):
-        self.datalen = len(data)
-        self.file = _io.BytesIO(data)
-        # self.file = TagFileDebugger(self.file)
 
-        # Get all _read_*() methods in a neat lookup table.
-        self._readers = {}
-        for name in dir(self):
-            if name.startswith('_read'):
-                typename = name.rsplit('_', 1)[1]
-                self._readers[typename] = getattr(self, name)
+def _read_numeric(infile, format):
+    struct = _STRUCTS[format]
+    return struct.unpack(infile.read(struct.size))[0]
 
-        self._read = self.file.read  # Shortcut for speed.
 
-    def decode(self):
+def _write_numeric(outfile, format, value):
+    outfile.write(_STRUCTS[format].pack(value))
+
+
+def read_byte(infile):
+    return _read_numeric(infile, '>b')
+
+
+def read_short(infile):
+    return _read_numeric(infile, '>h')
+
+
+def read_int(infile):
+    return _read_numeric(infile, '>i')
+
+
+def read_long(infile):
+    return _read_numeric(infile, '>q')
+
+
+def read_float(infile):
+    return _read_numeric(infile, '>f')
+
+
+def read_double(infile):
+    return _read_numeric(infile, '>d')
+
+
+def read_bytearray(infile):
+    length = read_int(infile)
+    return bytearray(infile.read(length))
+
+
+def read_string(infile):
+    length = read_short(infile)
+    return infile.read(length).decode('utf-8')
+
+
+def read_compound(infile):
+    compound = Compound()
+    while True:
+        typeid = read_byte(infile)
+        if typeid == 0:
+            break
+        name = read_string(infile)
+        compound.add(name, _TYPE_NAMES[typeid], _READERS[typeid](infile))
+
+    return compound
+
+
+def read_list(infile):
+    typeid = read_byte(infile)
+    length = read_int(infile)
+
+    if length == 0:
+        return List(typeid or None)
+    elif typeid == 0:
+        raise IOError('non-empty list with no type byte')
+    else:
+        read = _READERS[typeid]
+        typename = _TYPE_NAMES[typeid]
+        return List(typename, (read(infile) for _ in range(length)))
+
+
+def read_intarray(infile):
+    length = read_int(infile)
+    return [read_int(infile) for _ in range(length)]
+
+
+def decode(bytestring):
+    with _io.BytesIO(bytestring) as infile:
         # Skip outer compound type and name.
-        # Todo: check if this is 0 and ''.
-        self._read_byte()
-        self._read_string()
-        tag = self._readers['compound']()
-        # print(self.datalen - self.file.tell(), 'bytes left')
-        return tag
+        read_byte(infile)
+        read_string(infile)
+        return read_compound(infile)
 
-    def _read_byte(self):
-        return ord(self._read(1))
 
-    def _read_short(self):
-        return _struct.unpack('>h', self._read(2))[0]
+def load(filename):
+    return decode(_gzip.GzipFile(filename, 'rb').read())
 
-    def _read_int(self):
-        return _struct.unpack('>i', self._read(4))[0]
 
-    def _read_long(self):
-        return _struct.unpack('>q', self._read(8))[0]
 
-    def _read_float(self):
-        return _struct.unpack('>f', self._read(4))[0]
+def write_byte(outfile, value):
+    _write_numeric(outfile, '>b', value)
 
-    def _read_double(self):
-        return _struct.unpack('>d', self._read(8))[0]
 
-    def _read_bytearray(self):
-        length = self._read_int()
-        return bytearray(self._read(length))
+def write_short(outfile, value):
+    _write_numeric(outfile, '>h', value)
 
-    def _read_string(self):
-        length = self._read_short()
-        if length:
-            data = self._read(length)
-            string = data.decode('UTF-8')
-            return string
-        else:
-            return u''
 
-    def _read_compound(self):
-        compound = Compound()
-        while True:
-            typename = _TYPE_NAMES[self._read_byte()]
-            if typename == 'end':
-                break
-            name = self._read_string()
-            compound.add(name, typename, self._readers[typename]())
+def write_int(outfile, value):
+    _write_numeric(outfile, '>i', value)
 
-        return compound
 
-    def _read_list(self):
-        datatype = _TYPE_NAMES[self._read_byte()]
-        length = self._read_int()
-        if length == 0:
-            # Note: if length is 0 the datatype is 0,
-            # which means you can't determine the data type
-            # of an empty list.
-            return List(None)
+def write_long(outfile, value):
+    _write_numeric(outfile, '>q', value)
 
-        return List(datatype,
-                    [self._readers[datatype]() for _ in range(length)])
 
-    def _read_intarray(self):
-        length = self._read_int()
-        return [self._read_int() for _ in range(length)]
+def write_float(outfile, value):
+    _write_numeric(outfile, '>f', value)
+
+
+def write_double(outfile, value):
+    _write_numeric(outfile, '>d', value)
+
+
+def write_string(outfile, value):
+    encoded = value.encode('utf-8')
+    write_short(outfile, len(encoded))
+    outfile.write(encoded)
+
+
+def _write_intarray(outfile, array):
+    write_int(outfile, len(array))
+    for n in array:
+        write_int(outfile, n)
+
 
 class DebugByteArray(bytearray):
     def append(self, byte):
@@ -291,20 +316,20 @@ class Encoder(object):
         for n in array:
             self._write_int(n)
 
-def decode(data):
-    return Decoder(data).decode()
-
 def encode(data):
     return Encoder().encode(data)
-
-def load(filename):
-    return decode(_gzip.GzipFile(filename, 'rb').read())
 
 def save(filename, data):
     _gzip.GzipFile(filename, 'wb').write(encode(data))
 
 # JSON:
 #     return _json.dumps(data, indent=2, sort_keys=True)
+
+def split_path(path):
+    return [part for part in path.split('/') if part]
+
+def canonize_path(path):
+    return '/' + '/'.join(path)
 
 def walk(comp):
     todo = [('', 'compound', comp)]
@@ -353,3 +378,24 @@ def print_tree(tree):
                 words.append(repr(value))
 
         print('  '.join(words))
+
+
+def _init_types(namespace):
+    """Initialize type lookup tables."""
+    for typeid, name in enumerate(['byte',
+                                   'short',
+                                   'int',
+                                   'long',
+                                   'float',
+                                   'double',
+                                   'bytearray',
+                                   'string',
+                                   'list',
+                                   'compound',
+                                   'intarray'],
+                                  start=1):
+        _TYPE_NAMES[typeid] = name
+        _TYPE_IDS[name] = typeid
+        _READERS[typeid] = namespace['read_{}'.format(name)]
+
+_init_types(globals())
