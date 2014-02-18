@@ -113,7 +113,7 @@ class RegionFile(object):
     def __iter__(self):
         for chunk in self._chunk_headers:
             if chunk['offset']:
-                yield self.read_chunk(*chunk['xz'])
+                yield self.load_chunk(*chunk['xz'])
 
     def __enter__(self):
         return self
