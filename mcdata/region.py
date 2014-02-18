@@ -86,7 +86,7 @@ class RegionFile(object):
         for i in range(NUM_CHUNKS):
             self._chunk_headers[i]['timestamp'] = read_int(self.file, 4)
 
-    def read_chunk(self, x, z):
+    def load_chunk(self, x, z):
         # Todo: this test is already done in __iter__().
         # Also, what should happen if the chunk doesn't exist?
         # (Exception probably.)
@@ -104,7 +104,7 @@ class RegionFile(object):
 
         return _nbt.decode(data)
 
-    # def write_chunk(self, chunk):
+    # def save_chunk(self, chunk):
     #     pass
 
     # def delete_chunk(self, x, z):
