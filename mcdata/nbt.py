@@ -8,6 +8,7 @@ from struct import Struct as _Struct
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
 _READERS = {}
+_WRITERS = {}
 # Todo: better name.
 _STRUCTS = {fmt: _Struct(fmt) for fmt in ['>b', '>h', '>i', '>q', '>f', '>d']}
 END = 0
@@ -216,120 +217,61 @@ def write_double(outfile, value):
     _write_numeric(outfile, '>d', value)
 
 
+def write_bytearray(outfile, value):
+    write_int(outfile, len(array))
+    outfile.write(value)
+
+
 def write_string(outfile, value):
     encoded = value.encode('utf-8')
     write_short(outfile, len(encoded))
     outfile.write(encoded)
 
 
-def _write_intarray(outfile, array):
+def write_compound(outfile, compound):
+    for name, value in sorted(compound.items()):
+        typeid = _TYPE_IDS[compound.types[name]]
+        write_byte(outfile, typeid)
+        write_string(outfile, name)
+        _WRITERS[typeid](outfile, value)
+
+    write_byte(outfile, END)
+
+
+def write_list(outfile, lst):
+    if len(lst) == 0:
+        write_byte(outfile, lst.type or 0)
+        write_int(outfile, 0)
+    elif lst.type is None:
+        raise ValueError("non-empty list must have type != None")
+    else:
+        typeid = _TYPE_IDS[lst.type]
+        write_byte(outfile, typeid)
+        write_int(outfile, len(lst))
+    
+        write = _WRITERS[typeid]
+        for value in lst:
+            write(outfile, value)
+
+
+def write_intarray(outfile, array):
     write_int(outfile, len(array))
     for n in array:
         write_int(outfile, n)
 
 
-class DebugByteArray(bytearray):
-    def append(self, byte):
-        print(repr(byte))
-    def extend(self, bytes):
-        for byte in bytes:
-            self.append(byte)
-
-class Encoder(object):
-    def __init__(self):
-        self.data = None
-
-        # Get all _write_*() methods in a neat lookup table.
-        # Todo: this is duplicated in the Decoder. Unduplicate.
-        self._writers = {}
-        for name in dir(self):
-            if name.startswith('_write'):
-                typename = name.rsplit('_', 1)[1]
-                self._writers[typename] = getattr(self, name)
-
-    def encode(self, tag):
-        self.data = bytearray()
-        # self.data = DebugByteArray()
-
+def encode(compound):
+    with _io.BytesIO('wb') as outfile:
         # The outer compound has no name.
-        self._write_byte(_TYPE_IDS['compound'])
-        self._write_string('')
-        self._writers['compound'](tag)
+        write_byte(outfile, _TYPE_IDS['compound'])
+        write_string(outfile, '')
+        write_compound(outfile, compound)
+    
+        return outfile.getvalue()
 
-        # Todo: support Python 3.
-        return bytes(self.data)
+def save(filename, compound):
+    _gzip.GzipFile(filename, 'wb').write(encode(compound))
 
-    def _write_byte(self, value):
-        self.data.append(value)
-
-    def _write_short(self, value):
-        self.data.extend(_struct.pack('>h', value))
-
-    def _write_int(self, value):
-        self.data.extend(_struct.pack('>i', value))
-
-    def _write_long(self, value):
-        self.data.extend(_struct.pack('>q', value))
-
-    def _write_float(self, value):
-        self.data.extend(_struct.pack('>f', value))
-
-    def _write_double(self, value):
-        self.data.extend(_struct.pack('>d', value))
-
-    def _write_bytearray(self, array):
-        self._write_int(len(array))
-        self.data.extend(array)
-
-    def _write_string(self, value):
-        data = value.encode('UTF-8')
-        self._write_short(len(data))
-        self.data.extend(data)
-
-    def _write_compound(self, compound):
-        for name, value in sorted(compound.items()):
-            typename = compound.types[name]
-            self.data.append(_TYPE_IDS[typename])
-            self._write_string(name)
-            self._writers[compound.types[name]](value)
-            
-        self.data.append(0)  # End tag.
-
-    def _write_list(self, lst):
-        if len(lst) == 0:
-            # Empty list. Type and length are both 0.
-            self._write_byte(0)
-            self._write_int(0)
-        else:
-            if lst.type is None:
-                raise ValueError("non-empty list must have type != None")
-
-            datatype = lst.type
-            self._write_byte(_TYPE_IDS[datatype])
-            self._write_int(len(lst))
-
-            for value in lst:
-                self._writers[datatype](value)
-
-    def _write_intarray(self, array):
-        self._write_int(len(array))
-        for n in array:
-            self._write_int(n)
-
-def encode(data):
-    return Encoder().encode(data)
-
-def save(filename, data):
-    _gzip.GzipFile(filename, 'wb').write(encode(data))
-
-# JSON:
-#     return _json.dumps(data, indent=2, sort_keys=True)
-
-def split_path(path):
-    return [part for part in path.split('/') if part]
-
-def canonize_path(path):
-    return '/' + '/'.join(path)
 
 def walk(comp):
     todo = [('', 'compound', comp)]
@@ -397,5 +339,6 @@ def _init_types(namespace):
         _TYPE_NAMES[typeid] = name
         _TYPE_IDS[name] = typeid
         _READERS[typeid] = namespace['read_{}'.format(name)]
+        _WRITERS[typeid] = namespace['write_{}'.format(name)]
 
 _init_types(globals())
