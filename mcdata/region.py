@@ -11,6 +11,8 @@ Todo:
 
 * "pos" is a bad name.
 """
+from __future__ import division
+import math as _math
 import zlib as _zlib
 from . import nbt as _nbt
 
@@ -18,69 +20,97 @@ NUM_CHUNKS = 1024
 SECTOR_SIZE = 4096
 HEADER_SIZE = SECTOR_SIZE * 2
 
-class ChunkHeader(object):
-    def __init__(self, pos=0, offset=0, sector_count=0, timestamp=0):
-        # Todo: compute (X, Z)
-        self.pos = 0
-        self.offset = offset
-        self.sector_count = sector_count
-        self.timestamp = timestamp
+class SectorUsage(bytearray):
+    def mark(self, pos, size):
+        self[pos:pos + size] = bytearray(1) * size
 
-    def __repr__(self):
-        fmt = '<ChunkHeader {} offset={} sector_count={} timestamp={}>'
-        return fmt.format(self.pos,
-                          self.offset,
-                          self.sector_count,
-                          self.timestamp)
+    def alloc(self, size):
+        pos = self.find(bytearray(size))
+        if pos == -1:
+            self.rstrip(bytearray(0))  # This doesn't work.
+            pos = len(self)
+        self.mark(pos, size)
+        return pos
 
+    def free(self, pos, size):
+        self[pos:pos + size] = bytearray(size)
+
+
+def read_int(infile, size):
+    value = 0
+    while size:
+        value <<= 8
+        value |= ord(infile.read(1))
+        size -= 1
+    return value
+
+
+# def write_int(self)
+#    pass
 
 class RegionFile(object):
+    # Todo: file object instead of filename and mode?
     def __init__(self, filename, mode='rb'):
         self.file = open(filename, mode)
-        self.headers = self._load_chunk_headers()
 
-    def _load_chunk_headers(self):
+        # The first two sectors are chunk headers, so they
+        # are marked as used.
+        self._sector_usage = SectorUsage([1, 1])
+        self._chunk_headers = []
+        self._chunk_lookup = {}  # Chunk headers indexed by (x, z).
+
+        self._load_headers()
+
+    def _load_headers(self):
         # Rewind in case we're called more than once.
         self.file.seek(0)
-        headers = [ChunkHeader(i) for i in range(NUM_CHUNKS)]
 
-        for header in headers:
-            header.offset = self._read_int(3)
-            header.sector_count = self._read_int(1)
+        for i in range(NUM_CHUNKS):
+            chunk = {'offset': read_int(self.file, 3),
+                      'sector_count': read_int(self.file, 1)}
+            self._chunk_headers.append(chunk)
 
-        for header in headers:
-            header.timestamp = self._read_int(4)
+            # Compute coordinates for this chunk.
+            # Todo: this is probably not correct.
+            chunk['xz'] = (i & 0x1f, i >> 5)
 
-        return headers
+            self._chunk_lookup[chunk['xz']] = chunk
 
-    def _read_chunk(self, pos):
+            if chunk['offset']:
+                self._sector_usage.mark(chunk['offset'], chunk['sector_count'])
+
+        # Load timestamps.
+        for i in range(NUM_CHUNKS):
+            self._chunk_headers[i]['timestamp'] = read_int(self.file, 4)
+
+    def read_chunk(self, x, z):
         # Todo: this test is already done in __iter__().
         # Also, what should happen if the chunk doesn't exist?
         # (Exception probably.)
-        header = self.headers[pos]
-        if header.offset == 0:
-            return {}
+        chunk = self._chunk_lookup[(x, z)]
+        if chunk['offset'] == 0:
+            # Todo: which exception?
+            raise LookupError('chunk {!r} is now spawned'.format((x, z)))
 
-        self.file.seek(header.offset * SECTOR_SIZE)
+        self.file.seek(chunk['offset'] * SECTOR_SIZE)
 
-        length = self._read_int(4)
-        compression = self._read_int(1)
-        data = _zlib.decompress(self.file.read(length-1))
+        length = read_int(self.file, 4)
+        # Todo: what if compression is not zlib?
+        compression = read_int(self.file, 1)
+        data = _zlib.decompress(self.file.read(length - 1))
 
         return _nbt.decode(data)
 
-    def _read_int(self, numbytes):
-        value = 0
-        while numbytes:
-            value <<= 8
-            value |= ord(self.file.read(1))
-            numbytes -= 1
-        return value
+    # def write_chunk(self, chunk):
+    #     pass
+
+    # def delete_chunk(self, x, z):
+    #     pass  # Todo: do nothing if the chunk is already deleted.
 
     def __iter__(self):
-        for i in range(NUM_CHUNKS):
-            if self.headers[i].offset != 0:
-                yield self._read_chunk(i)
+        for chunk in self._chunk_headers:
+            if chunk['offset']:
+                yield self.read_chunk(*chunk['xz'])
 
     def __enter__(self):
         return self
