@@ -22,12 +22,15 @@ HEADER_SIZE = SECTOR_SIZE * 2
 
 class SectorUsage(bytearray):
     def mark(self, pos, size):
-        self[pos:pos + size] = bytearray(1) * size
+        self[pos:pos + size] = '\x01' * size
 
     def alloc(self, size):
+        # Remove any free sectors from the end.
+        while self.endswith('\x00'):
+            self.pop()
+
         pos = self.find(bytearray(size))
         if pos == -1:
-            self.rstrip(bytearray(0))  # This doesn't work.
             pos = len(self)
         self.mark(pos, size)
         return pos
