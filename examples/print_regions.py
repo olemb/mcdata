@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Print all regions.
 
@@ -12,4 +13,5 @@ from mcdata.region import RegionFile
 for filename in sys.argv[1:]:
     print('# File: {}'.format(filename))
     for chunk in RegionFile(filename):
-        print_tree(chunk)
+        if chunk:
+            print_tree(chunk)

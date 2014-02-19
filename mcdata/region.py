@@ -22,7 +22,7 @@ HEADER_SIZE = SECTOR_SIZE * 2
 
 class SectorUsage(bytearray):
     def mark(self, pos, size):
-        self[pos:pos + size] = '\x01' * size
+        self[pos:pos + size] = b'\x01' * size
 
     def alloc(self, size):
         # Remove any free sectors from the end.
@@ -59,8 +59,7 @@ class RegionFile(object):
         # The first two sectors are chunk headers, so they
         # are marked as used.
         self._sector_usage = SectorUsage([1, 1])
-        self._chunk_headers = []
-        self._chunk_lookup = {}  # Chunk headers indexed by (x, z).
+        self._headers = []
 
         self._load_headers()
 
@@ -69,33 +68,26 @@ class RegionFile(object):
         self.file.seek(0)
 
         for i in range(NUM_CHUNKS):
-            chunk = {'offset': read_int(self.file, 3),
+            header = {'offset': read_int(self.file, 3),
                       'sector_count': read_int(self.file, 1)}
-            self._chunk_headers.append(chunk)
+            self._headers.append(header)
 
-            # Compute coordinates for this chunk.
-            # Todo: this is probably not correct.
-            chunk['xz'] = (i & 0x1f, i >> 5)
-
-            self._chunk_lookup[chunk['xz']] = chunk
-
-            if chunk['offset']:
-                self._sector_usage.mark(chunk['offset'], chunk['sector_count'])
+            if header['offset']:
+                self._sector_usage.mark(header['offset'], header['sector_count'])
 
         # Load timestamps.
         for i in range(NUM_CHUNKS):
-            self._chunk_headers[i]['timestamp'] = read_int(self.file, 4)
+            self._headers[i]['timestamp'] = read_int(self.file, 4)
 
-    def load_chunk(self, x, z):
+    def __getitem__(self, index):
         # Todo: this test is already done in __iter__().
         # Also, what should happen if the chunk doesn't exist?
         # (Exception probably.)
-        chunk = self._chunk_lookup[(x, z)]
-        if chunk['offset'] == 0:
-            # Todo: which exception?
-            raise LookupError('chunk {!r} is now spawned'.format((x, z)))
+        header = self._headers[index]
+        if header['offset'] == 0:
+            return None
 
-        self.file.seek(chunk['offset'] * SECTOR_SIZE)
+        self.file.seek(header['offset'] * SECTOR_SIZE)
 
         length = read_int(self.file, 4)
         # Todo: what if compression is not zlib?
@@ -107,13 +99,21 @@ class RegionFile(object):
     # def save_chunk(self, chunk):
     #     pass
 
-    # def delete_chunk(self, x, z):
-    #     pass  # Todo: do nothing if the chunk is already deleted.
+    def delete_chunk(self, index):
+        # Todo:
+        header = self._headers[index]
+        if header['offset']:
+            self._sector_usage.free(header['offset'], header['sector_count'])
+            header['offset'] = header['sector_count'] = 0
+            # Todo: clear data?
 
     def __iter__(self):
-        for chunk in self._chunk_headers:
-            if chunk['offset']:
-                yield self.load_chunk(*chunk['xz'])
+        for index, header in enumerate(self._headers):
+            if header['offset']:
+                yield self[index]
+
+    def __len__(self):
+        return MAX_CHUNKS
 
     def __enter__(self):
         return self
