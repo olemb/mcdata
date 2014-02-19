@@ -156,8 +156,9 @@ class RegionFile(object):
         write_int(self.file, COMPRESSION_ZLIB, 1)
         self.file.write(data)
 
-        pad = SECTOR_SIZE - total % SECTOR_SIZE
-        self.file.write('\x00' * pad)
+        if total % SECTOR_SIZE:
+            pad = SECTOR_SIZE - (total % SECTOR_SIZE)
+            self.file.write('\x00' * pad)
             
     def __delitem__(self, index):
         # Todo:
