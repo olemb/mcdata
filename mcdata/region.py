@@ -49,8 +49,14 @@ def read_int(infile, size):
     return value
 
 
-# def write_int(self)
-#    pass
+def write_int(outfile, value, size):
+    bytes = bytearray()
+    while size:
+        bytes.append(value & 0xff)
+        value >>= 8
+        size -= 1
+    outfile.write(bytes)
+
 
 class RegionFile(object):
     # Todo: file object instead of filename and mode?
