@@ -167,8 +167,12 @@ def decode(bytestring):
 
 
 def load(filename):
-    return decode(_gzip.GzipFile(filename, 'rb').read())
-
+    try:
+        return decode(_gzip.GzipFile(filename, 'rb').read())
+    except (IOError, OSError):
+        # Python 2 raises IOError.
+        # Python 3 raises OSError.
+        return decode(open(filename, 'rb').read())
 
 
 def write_byte(outfile, value):
