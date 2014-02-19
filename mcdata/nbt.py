@@ -199,9 +199,9 @@ def write_double(outfile, value):
     _write_numeric(outfile, '>d', value)
 
 
-def write_bytearray(outfile, value):
+def write_bytearray(outfile, array):
     write_int(outfile, len(array))
-    outfile.write(value)
+    outfile.write(array)
 
 
 def write_string(outfile, value):

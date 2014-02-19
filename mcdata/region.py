@@ -152,7 +152,7 @@ class RegionFile(object):
         chunk['timestamp'] = int(_time.time() * 1000)
         
         self.file.seek(chunk['offset'] * SECTOR_SIZE)
-        write_int(self.file, len(data), 4)
+        write_int(self.file, len(data) + 1, 4)  # + 1 for compression.
         write_int(self.file, COMPRESSION_ZLIB, 1)
         self.file.write(data)
 
