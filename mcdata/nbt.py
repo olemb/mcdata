@@ -23,49 +23,27 @@ class Collection(object):
 
 
 class Compound(dict, Collection):
-    def __init__(self, items=None, **kw):
+    def __init__(self, *args, **kw):
         self.types = {}
-        if items is not None:
-            for (name, type, value) in items:
-                self.add(name, type, value)
+        dict.__init__(self, *args, **kw)
 
-        for name, (type, value) in kw.items():
-            self.add(name, type, value)
-
-    # def get_type(self, name): 
-    #     return self.types[name]
-
-    def add(self, name, type, value):
-        self.types[name] = type
-        dict.__setitem__(self, name, value)
+    def get_type(self, name): 
+        return self.types[name]
 
     def __setitem__(self, name, value):
-        print(name, value)
-        if name in self:
-            dict.__setitem__(self, name, value)
-        else:
-            raise KeyError(name)
+        if isinstance(name, tuple):
+            name, typename = name
+            self.types[name] = typename
+        dict.__setitem__(self, name, value)
 
     def __delitem__(self, name):
-        if name in self:
-            dict.__delitem__(self, name)
-            del self.types[name]
-        else:
-            raise KeyError(name)
-
-    def copy(self):
-        # Todo: check if this works
-        other = Compound()
-        other.types = self.types.copy()
-        list.update(other, self)
-        return other
-
-    # Todo: __repr__()
+        del self.types[name]
+        dict.__delitem__(self, name)
 
     # check()  # performs sanity checking on data. (Valid type, range etc.)
 
     # deepcopy()
-    # update()
+    # update()  # Update types?
 
 
 class List(list, Collection):
@@ -156,7 +134,7 @@ def read_compound(infile):
         if typeid == 0:
             break
         name = read_string(infile)
-        compound.add(name, _TYPE_NAMES[typeid], _READERS[typeid](infile))
+        compound[(name, _TYPE_NAMES[typeid])] = _READERS[typeid](infile)
 
     return compound
 
