@@ -168,14 +168,6 @@ class RegionFile(object):
             chunk['offset'] = chunk['sector_count'] = 0
             # Todo: clear data?
 
-    def __iter__(self):
-        for index, chunk in enumerate(self._chunks):
-            if chunk['offset']:
-                yield self[index]
-
-    def __len__(self):
-        return MAX_CHUNKS
-
     def close(self):
         if not self.closed:
             if 'w' in self.mode: 
