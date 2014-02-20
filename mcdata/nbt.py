@@ -40,10 +40,15 @@ class Compound(dict, Collection):
         del self.types[name]
         dict.__delitem__(self, name)
 
+    __getattr__ = dict.__getitem__
+
     # check()  # performs sanity checking on data. (Valid type, range etc.)
 
     # deepcopy()
     # update()  # Update types?
+
+    def __repr__(self):
+        return '<compound keys={}>'.format(list(sorted(self.keys())))
 
 
 class List(list, Collection):
@@ -52,7 +57,8 @@ class List(list, Collection):
         if items is not None:
             self.extend(items)
 
-    # Todo: __repr__()
+    def __repr__(self):
+        return '<list type={} len={}>'.format(self.type, len(self))
 
 
 class TagFileDebugger(object):
