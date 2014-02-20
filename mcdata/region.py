@@ -119,7 +119,7 @@ class RegionFile(object):
         for chunk in self._chunks:
             write_int(self.file, chunk['timestamp'], 4)
 
-    def __getitem__(self, index):
+    def load_chunk(self, index):
         # Todo: this test is already done in __iter__().
         # Also, what should happen if the chunk doesn't exist?
         # (Exception probably.)
@@ -136,7 +136,7 @@ class RegionFile(object):
 
         return _nbt.decode(data)
 
-    def __setitem__(self, index, chunk):
+    def save_chunk(self, index, chunk):
         if self.mode != 'w':
             raise IOError('region is opened as read only')
 
@@ -164,8 +164,7 @@ class RegionFile(object):
             pad = SECTOR_SIZE - (total % SECTOR_SIZE)
             self.file.write(b'\x00' * pad)
             
-    def __delitem__(self, index):
-        # Todo:
+    def remove_chunk(self, index):
         chunk = self._chunks[index]
         if chunk['offset']:
             self._sector_usage.free(chunk['offset'], chunk['sector_count'])
@@ -177,6 +176,11 @@ class RegionFile(object):
             if 'w' in self.mode: 
                 self._write_headers()
             self.file.close()
+
+    def __iter__(self):
+        for index in range(len(self._chunks)):
+            if self._chunks[index]['offset']:
+                yield self.load_chunk(index)
 
     def __enter__(self):
         return self
