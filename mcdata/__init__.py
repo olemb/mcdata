@@ -8,6 +8,21 @@ def make_seed(s):
     return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
 
 
+def _get_region(x, z):
+    return int(x // 512), int(z // 512)
+
+
+def _get_chunk_index(x, z):
+    # Get coordinates within region                                             
+    x %= 512
+    z %= 512
+    return ((z // 16) * 32) + (x // 16)
+
+
+def get_chunk_location(x, z):
+    return 'r.{}.{}.mca'.format(*_get_region(x, z)), _get_chunk_index(x, z)
+
+
 class Nibbler(object):
     """Access a bytearray as an array of nibbles."""
     def __init__(self, array):
