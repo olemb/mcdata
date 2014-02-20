@@ -77,7 +77,7 @@ class RegionFile(object):
         self._chunks = []
 
         file_exists = _os.path.exists(filename)
-        file_mode = {'r': 'rb', 'w': 'ab+'}[mode]
+        file_mode = {'r': 'rb', 'w': 'r+b'}[mode]
 
         if not file_exists:
             if mode == 'r':
