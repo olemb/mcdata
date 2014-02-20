@@ -125,7 +125,7 @@ class RegionFile(object):
     @property
     def spawned_chunks(self):
         """Return list of indices of spawned chunks."""
-        return [i for i in len(MAX_CHUNKS) if self.spawned(i)]
+        return [i for i in range(MAX_CHUNKS) if self.spawned(i)]
 
     def load_chunk(self, index):
         # Todo: this test is already done in __iter__().
