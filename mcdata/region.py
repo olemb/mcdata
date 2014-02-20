@@ -119,6 +119,14 @@ class RegionFile(object):
         for chunk in self._chunks:
             write_int(self.file, chunk['timestamp'], 4)
 
+    def spawned(self, index):
+        return bool(self._chunks[index]['offset'])
+
+    @property
+    def spawned_chunks(self):
+        """Return list of indices of spawned chunks."""
+        return [i for i in len(MAX_CHUNKS) if self.spawned(i)]
+
     def load_chunk(self, index):
         # Todo: this test is already done in __iter__().
         # Also, what should happen if the chunk doesn't exist?
@@ -178,9 +186,11 @@ class RegionFile(object):
             self.file.close()
 
     def __iter__(self):
-        for index in range(len(self._chunks)):
-            if self._chunks[index]['offset']:
-                yield self.load_chunk(index)
+        for index in self.spawned_chunks:
+            yield self.load_chunk(index)
+
+    def __len__(self):
+        return len(self.spawned_chunks)
 
     def __enter__(self):
         return self
