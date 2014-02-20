@@ -9,12 +9,10 @@ from mcdata.nbt import load, print_tree
 for filename in sys.argv[1:]:
     print('# File: {}'.format(filename))
 
-    if filename.endswith('.dat'):
-        print_tree(load(filename))
-    elif filename.endswith('.mca'):
+    if filename.endswith('.mca'):
         for index, chunk in enumerate(RegionFile(filename)):
             if chunk:
                 print('# Chunk: {} ({})'.format(index, filename))
                 print_tree(chunk)
     else:
-        print('# Unknown file type.')
+        print_tree(load(filename))
