@@ -42,6 +42,10 @@ class SectorUsage(bytearray):
     def free(self, pos, size):
         self[pos:pos + size] = bytearray(size)
 
+    def __repr__(self):
+        usage = ''.join(map(str, self))
+        return '<sector usage {}>'.format(usage)
+
 
 def read_int(infile, size):
     value = 0
