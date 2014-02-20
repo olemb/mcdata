@@ -287,7 +287,7 @@ def walk(comp):
                             value))
 
 def _format_bytearray(array):
-    return ','.join(str(byte) for byte in array)
+    return ':'.join('{:02x}'.format(byte) for byte in array)
 
 def print_tree(tree):
     for path, typename, value in walk(tree):
