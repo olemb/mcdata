@@ -61,7 +61,7 @@ class List(list, Collection):
         return '<list type={} len={}>'.format(self.type, len(self))
 
 
-class TagFileDebugger(object):
+class DebugFile(object):
     """Wraps around TagFile."""
     def __init__(self, file):
         self.file = file
@@ -88,6 +88,13 @@ class TagFileDebugger(object):
         _sys.stdout.flush()
 
         return data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.file.close()
+        return False
 
 
 def _read_numeric(infile, format):
