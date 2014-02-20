@@ -52,7 +52,7 @@ class Compound(dict, Collection):
 
 
 class List(list, Collection):
-    def __init__(self, type, items=None):
+    def __init__(self, type='compound', items=None):
         self.type = type
         if items is not None:
             self.extend(items)
