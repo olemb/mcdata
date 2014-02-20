@@ -21,8 +21,8 @@ from . import nbt as _nbt
 MAX_CHUNKS = 1024
 SECTOR_SIZE = 4096
 HEADER_SIZE = SECTOR_SIZE * 2
-COMPRESSION_ZLIB = 1
-# COMPRESSION_GZIP = ?
+COMPRESSION_GZIP = 1  # Never used.
+COMPRESSION_ZLIB = 2
 
 class SectorUsage(bytearray):
     def mark(self, pos, size):
