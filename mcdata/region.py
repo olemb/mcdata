@@ -172,7 +172,7 @@ class RegionFile(object):
             pad = SECTOR_SIZE - (total % SECTOR_SIZE)
             self.file.write(b'\x00' * pad)
             
-    def remove_chunk(self, index):
+    def delete_chunk(self, index):
         chunk = self._chunks[index]
         if chunk['offset']:
             self._sector_usage.free(chunk['offset'], chunk['sector_count'])
