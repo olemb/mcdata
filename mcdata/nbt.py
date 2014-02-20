@@ -249,7 +249,7 @@ def write_intarray(outfile, array):
 
 
 def encode(compound):
-    with _io.BytesIO('wb') as outfile:
+    with _io.BytesIO() as outfile:
         # The outer compound has no name.
         write_byte(outfile, _TYPE_IDS['compound'])
         write_string(outfile, '')

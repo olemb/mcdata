@@ -30,7 +30,7 @@ class SectorUsage(bytearray):
 
     def alloc(self, size):
         # Remove any free sectors from the end.
-        while self.endswith('\x00'):
+        while self.endswith(b'\x00'):
             self.pop()
 
         pos = self.find(bytearray(size))
@@ -77,7 +77,7 @@ class RegionFile(object):
         self._chunks = []
 
         file_exists = _os.path.exists(filename)
-        file_mode = {'r': 'rb', 'w': 'rab+'}[mode]
+        file_mode = {'r': 'rb', 'w': 'ab+'}[mode]
 
         if not file_exists:
             if mode == 'r':
@@ -86,7 +86,7 @@ class RegionFile(object):
                 # Create file.
                 with open(filename, 'wb') as self.file:
                     # Write blank header.
-                    self.file.write('\00' * SECTOR_SIZE * 2)
+                    self.file.write(b'\x00' * SECTOR_SIZE * 2)
 
         self.file = open(filename, file_mode)
         self._read_headers()
@@ -162,7 +162,7 @@ class RegionFile(object):
 
         if total % SECTOR_SIZE:
             pad = SECTOR_SIZE - (total % SECTOR_SIZE)
-            self.file.write('\x00' * pad)
+            self.file.write(b'\x00' * pad)
             
     def __delitem__(self, index):
         # Todo:
