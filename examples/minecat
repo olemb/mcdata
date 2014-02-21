@@ -6,13 +6,19 @@ from mcdata.region import RegionFile
 import sys
 from mcdata.nbt import load, print_tree
 
-for filename in sys.argv[1:]:
-    print('# File: {}'.format(filename))
+def main():
+    for filename in sys.argv[1:]:
+        print('# File: {}'.format(filename))
 
-    if filename.endswith('.mca'):
-        for index, chunk in enumerate(RegionFile(filename)):
-            if chunk:
-                print('# Chunk: {} ({})'.format(index, filename))
-                print_tree(chunk)
-    else:
-        print_tree(load(filename))
+        if filename.endswith('.mca'):
+            for index, chunk in enumerate(RegionFile(filename)):
+                if chunk:
+                    print('# Chunk: {} ({})'.format(index, filename))
+                    print_tree(chunk)
+        else:
+            print_tree(load(filename))
+
+try:
+    main()
+except BrokenPipeError:
+    pass
