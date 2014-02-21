@@ -2,14 +2,6 @@
 Region files (*.mca).
 
 http://minecraft.gamepedia.com/Region_file_format
-
-Todo:
-
-* positions are 0-1023 for now. (Should be (X, Z) tuple.)
-
-* save chunk.
-
-* "pos" is a bad name.
 """
 from __future__ import division
 import os as _os
