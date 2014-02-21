@@ -23,14 +23,4 @@ Todo
 
 * refer to "tag" as "tree"?
 
-* add .mca (Anvil) support.
-
-* support Python 3.
-
 * error checking: raise exception if there are bytes left over after decoding.
-
-* JSON support?
-
-* give Compound and List meaningful __repr__() values.
-
-* "# Todo:" items in code.
