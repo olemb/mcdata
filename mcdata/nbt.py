@@ -306,9 +306,9 @@ def print_tree(tree):
             typename = 'list:{}'.format(value.type or '')
 
         try:
-            words.append('{}[{}]'.format(typename, len(value)))
+            words.append('<{}[{}]>'.format(typename, len(value)))
         except TypeError:
-            words.append(typename)
+            words.append('<{}>'.format(typename))
 
         if not isinstance(value, Collection):
             if isinstance(value, bytearray):
