@@ -239,16 +239,23 @@ def write_list(outfile, lst):
     if len(lst) == 0:
         write_byte(outfile, lst.type or 0)
         write_int(outfile, 0)
-    elif lst.type is None:
-        raise ValueError("non-empty list must have type != None")
+        return
+
+    if lst.type is None:
+        # Try to determine list type from content.
+        if isinstance(lst[0], Compound):
+            typeid = _TYPE_IDS['compound']
+        else:
+            raise ValueError("non-empty list must have type != None")
     else:
         typeid = _TYPE_IDS[lst.type]
-        write_byte(outfile, typeid)
-        write_int(outfile, len(lst))
+
+    write_byte(outfile, typeid)
+    write_int(outfile, len(lst))
     
-        write = _WRITERS[typeid]
-        for value in lst:
-            write(outfile, value)
+    write = _WRITERS[typeid]
+    for value in lst:
+        write(outfile, value)
 
 
 def write_intarray(outfile, array):
