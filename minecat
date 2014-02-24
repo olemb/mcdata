@@ -6,12 +6,7 @@ from mcdata.region import RegionFile
 import sys
 from mcdata.nbt import load, print_tree
 
-# BrokenPipeError is new in Python 3.3.
-# Earlier versions raise IOError.
-try:
-    error_type = BrokenPipeError
-except NameError:
-    error_type = IOError
+PY33 = (sys.version_info.major, sys.version_info.minor) >= (3, 3)
 
 def main():
     for filename in sys.argv[1:]:
@@ -26,6 +21,14 @@ def main():
             print_tree(load(filename))
 
 try:
-    main()
-except (error_type, KeyboardInterrupt):
+    # Python 3.3 raises BrokenPipeError.
+    # Earlier versions don't.
+    if PY33:
+        try:
+            main()
+        except BrokenPipeError:
+            pass
+    else:
+        main()
+except KeyboardInterrupt:
     pass
