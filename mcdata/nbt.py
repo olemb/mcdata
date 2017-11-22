@@ -171,6 +171,11 @@ def read_intarray(infile):
     return [read_int(infile) for _ in range(length)]
 
 
+def read_longarray(infile):
+    length = read_int(infile)
+    return [read_long(infile) for _ in range(length)]
+
+
 def decode(bytestring):
     with _io.BytesIO(bytestring) as infile:
         # Skip outer compound type and name.
@@ -264,6 +269,12 @@ def write_intarray(outfile, array):
         write_int(outfile, n)
 
 
+def write_longarray(outfile, array):
+    write_int(outfile, len(array))
+    for n in array:
+        write_long(outfile, n)
+
+
 def encode(compound):
     with _io.BytesIO() as outfile:
         # The outer compound has no name.
@@ -338,7 +349,8 @@ def _init_types(namespace):
                                    'string',
                                    'list',
                                    'compound',
-                                   'intarray'],
+                                   'intarray',
+                                   'longarray'],
                                   start=1):
         _TYPE_NAMES[typeid] = name
         _TYPE_IDS[name] = typeid
