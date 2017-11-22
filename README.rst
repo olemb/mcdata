@@ -3,11 +3,12 @@ mcdata
 
 Experimental library for reading and writing Minecraft data files.
 
-Use this instead: https://github.com/twoolie/NBT/tree/master/nbt
-
 This implements the NBT (Named Binary Tags) and Anvil formats.
 
 *NOTE!* This is a very early version. The API will probably change.
+: https://github.com/twoolie/NBT/tree/master/nbt
+
+
 
 
 Contact
