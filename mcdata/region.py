@@ -154,7 +154,7 @@ class RegionFile(object):
 
         # Todo: is this correct?
         chunk['timestamp'] = int(_time.time() * 1000)
-        
+
         self.file.seek(chunk['offset'] * SECTOR_SIZE)
         write_int(self.file, len(data) + 1, 4)  # + 1 for compression.
         write_int(self.file, COMPRESSION_ZLIB, 1)
@@ -163,7 +163,7 @@ class RegionFile(object):
         if total % SECTOR_SIZE:
             pad = SECTOR_SIZE - (total % SECTOR_SIZE)
             self.file.write(b'\x00' * pad)
-            
+
     def delete_chunk(self, index):
         chunk = self._chunks[index]
         if chunk['offset']:
@@ -173,7 +173,7 @@ class RegionFile(object):
 
     def close(self):
         if not self.closed:
-            if 'w' in self.mode: 
+            if 'w' in self.mode:
                 self._write_headers()
             self.file.close()
 

@@ -1,5 +1,3 @@
-from . import nbt
-
 def make_seed(s):
     # Todo: handle number.
     h = 0
@@ -13,7 +11,7 @@ def _get_region(x, z):
 
 
 def _get_chunk_index(x, z):
-    # Get coordinates within region                                             
+    # Get coordinates within region
     x %= 512
     z %= 512
     return ((z // 16) * 32) + (x // 16)
