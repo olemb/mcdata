@@ -191,7 +191,7 @@ def load(filename):
         # Python 2 raises IOError.
         # Python 3 raises OSError.
         pass
-    
+
     return decode(open(filename, 'rb').read())
 
 
@@ -257,7 +257,7 @@ def write_list(outfile, lst):
 
     write_byte(outfile, typeid)
     write_int(outfile, len(lst))
-    
+
     write = _WRITERS[typeid]
     for value in lst:
         write(outfile, value)
@@ -281,7 +281,7 @@ def encode(compound):
         write_byte(outfile, _TYPE_IDS['compound'])
         write_string(outfile, '')
         write_compound(outfile, compound)
-    
+
         return outfile.getvalue()
 
 def save(filename, compound):
