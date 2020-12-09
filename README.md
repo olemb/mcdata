@@ -1,4 +1,4 @@
-# mcdata - read and write Minecraft NBT data and region files
+# mcdata
 
 Experimental library for reading and writing Minecraft data files.
 
