@@ -2,14 +2,12 @@ from __future__ import print_function
 import io as _io
 import sys as _sys  # Used for debugging.
 import gzip as _gzip
-import json as _json
 from struct import Struct as _Struct
 
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
 _READERS = {}
 _WRITERS = {}
-# Todo: better name.
 _STRUCTS = {fmt: _Struct(fmt) for fmt in ['>b', '>h', '>i', '>q', '>f', '>d']}
 END = 0
 
@@ -27,7 +25,7 @@ class Compound(dict, Collection):
         self.types = {}
         dict.__init__(self, *args, **kw)
 
-    def get_type(self, name): 
+    def get_type(self, name):
         return self.types[name]
 
     def __setitem__(self, name, value):
@@ -69,9 +67,8 @@ class DebugFile(object):
     def _read_byte(self):
         char = self.file.read(1)
         pos = self.file.tell()
-        _sys.stdout.write('    {:08x}: {:02x} {!r}\n'.format(pos,
-                                                             ord(char),
-                                                             char))
+        line = '    {:08x}: {:02x} {!r}\n'.format(pos, ord(char), char)
+        _sys.stdout.write(line)
         pos += 1
         return char
 
