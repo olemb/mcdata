@@ -18,10 +18,11 @@ def _get_chunk_index(x, z):
 
 
 def get_chunk_location(x, z):
-    region = *_get_region(x, z)
-    index = _get_chunk_index(x, z)
-    return 'r.{}.{}.mca'.format(region, index),
-
+    """Return (filename, chunk_index)"""
+    region_x, region_z = _get_region(x, z)
+    chunk_index = _get_chunk_index(x, z)
+    filename = 'r.{}.{}.mca'.format(region_x, region_z)
+    return filename, chunk_index
 
 class Nibbler(object):
     """Access a bytearray as an array of nibbles."""

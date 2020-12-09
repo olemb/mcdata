@@ -185,11 +185,9 @@ def load(filename):
     try:
         return decode(_gzip.GzipFile(filename, 'rb').read())
     except (IOError, OSError):
-        # Python 2 raises IOError.
-        # Python 3 raises OSError.
-        pass
-
-    return decode(open(filename, 'rb').read())
+        # (Python 2 raises IOError, Python 3 raises OSError.)
+        # Data doesn't seem to be gzipped. Read directly.
+        return decode(open(filename, 'rb').read())
 
 
 def write_byte(outfile, value):
@@ -281,12 +279,13 @@ def encode(compound):
 
         return outfile.getvalue()
 
+
 def save(filename, compound):
     _gzip.GzipFile(filename, 'wb').write(encode(compound))
 
 
-def walk(comp):
-    todo = [('', 'compound', comp)]
+def walk(compound):
+    todo = [('', 'compound', compound)]
 
     while todo:
         (path, typename, value) = todo.pop()
@@ -310,8 +309,10 @@ def walk(comp):
                             typename,
                             value))
 
+
 def _format_bytearray(array):
     return ':'.join('{:02x}'.format(byte) for byte in array)
+
 
 def print_tree(tree):
     for path, typename, value in walk(tree):
