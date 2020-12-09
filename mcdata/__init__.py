@@ -1,8 +1,8 @@
-def make_seed(s):
+def make_seed(text):
     # Todo: handle number.
     h = 0
-    for c in s:
-        h = (31 * h + ord(c)) & 0xFFFFFFFF
+    for char in text:
+        h = (31 * h + ord(char)) & 0xFFFFFFFF
     return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
 
 
@@ -18,7 +18,9 @@ def _get_chunk_index(x, z):
 
 
 def get_chunk_location(x, z):
-    return 'r.{}.{}.mca'.format(*_get_region(x, z)), _get_chunk_index(x, z)
+    region = *_get_region(x, z)
+    index = _get_chunk_index(x, z)
+    return 'r.{}.{}.mca'.format(region, index),
 
 
 class Nibbler(object):
