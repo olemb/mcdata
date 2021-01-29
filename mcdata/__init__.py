@@ -24,6 +24,7 @@ def get_chunk_location(x, z):
     filename = 'r.{}.{}.mca'.format(region_x, region_z)
     return filename, chunk_index
 
+
 class Nibbler(object):
     """Access a bytearray as an array of nibbles."""
     def __init__(self, array):

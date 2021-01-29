@@ -355,4 +355,5 @@ def _init_types(namespace):
         _READERS[typeid] = namespace['read_{}'.format(name)]
         _WRITERS[typeid] = namespace['write_{}'.format(name)]
 
+
 _init_types(globals())

@@ -16,6 +16,7 @@ HEADER_SIZE = SECTOR_SIZE * 2
 COMPRESSION_GZIP = 1  # Never used.
 COMPRESSION_ZLIB = 2
 
+
 class SectorUsage(bytearray):
     def mark(self, pos, size):
         self[pos:pos + size] = b'\x01' * size
@@ -91,8 +92,10 @@ class RegionFile(object):
         self.file.seek(0)
 
         for i in range(MAX_CHUNKS):
-            chunk = {'offset': read_int(self.file, 3),
-                      'sector_count': read_int(self.file, 1)}
+            chunk = {
+                'offset': read_int(self.file, 3),
+                'sector_count': read_int(self.file, 1),
+            }
             self._chunks.append(chunk)
 
             if chunk['offset']:
