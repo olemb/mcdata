@@ -1,14 +1,14 @@
 from __future__ import print_function
-import io as _io
-import sys as _sys  # Used for debugging.
-import gzip as _gzip
-from struct import Struct as _Struct
+import io
+import sys
+import gzip
+from struct import Struct
 
 _TYPE_NAMES = {}
 _TYPE_IDS = {}
 _READERS = {}
 _WRITERS = {}
-_STRUCTS = {fmt: _Struct(fmt) for fmt in ['>b', '>h', '>i', '>q', '>f', '>d']}
+_STRUCTS = {fmt: Struct(fmt) for fmt in ['>b', '>h', '>i', '>q', '>f', '>d']}
 END = 0
 
 
@@ -68,7 +68,7 @@ class DebugFile(object):
         char = self.file.read(1)
         pos = self.file.tell()
         line = '    {:08x}: {:02x} {!r}\n'.format(pos, ord(char), char)
-        _sys.stdout.write(line)
+        sys.stdout.write(line)
         pos += 1
         return char
 
@@ -78,11 +78,11 @@ class DebugFile(object):
     def read(self, length):
         data = b''
 
-        _sys.stdout.write('  {READ\n')
+        sys.stdout.write('  {READ\n')
         for i in range(length):
             data += self._read_byte()
-        _sys.stdout.write('  }\n')
-        _sys.stdout.flush()
+        sys.stdout.write('  }\n')
+        sys.stdout.flush()
 
         return data
 
@@ -174,7 +174,7 @@ def read_longarray(infile):
 
 
 def decode(bytestring):
-    with _io.BytesIO(bytestring) as infile:
+    with io.BytesIO(bytestring) as infile:
         # Skip outer compound type and name.
         read_byte(infile)
         read_string(infile)
@@ -183,7 +183,7 @@ def decode(bytestring):
 
 def load(filename):
     try:
-        return decode(_gzip.GzipFile(filename, 'rb').read())
+        return decode(gzip.GzipFile(filename, 'rb').read())
     except (IOError, OSError):
         # (Python 2 raises IOError, Python 3 raises OSError.)
         # Data doesn't seem to be gzipped. Read directly.
@@ -271,7 +271,7 @@ def write_longarray(outfile, array):
 
 
 def encode(compound):
-    with _io.BytesIO() as outfile:
+    with io.BytesIO() as outfile:
         # The outer compound has no name.
         write_byte(outfile, _TYPE_IDS['compound'])
         write_string(outfile, '')
@@ -281,7 +281,7 @@ def encode(compound):
 
 
 def save(filename, compound):
-    _gzip.GzipFile(filename, 'wb').write(encode(compound))
+    gzip.GzipFile(filename, 'wb').write(encode(compound))
 
 
 def walk(compound):

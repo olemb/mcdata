@@ -4,11 +4,11 @@ Region files (*.mca).
 http://minecraft.gamepedia.com/Region_file_format
 """
 from __future__ import division
-import os as _os
-import math as _math
-import zlib as _zlib
-import time as _time
-from . import nbt as _nbt
+import os
+import math
+import zlib
+import time
+from . import nbt
 
 MAX_CHUNKS = 1024
 SECTOR_SIZE = 4096
@@ -69,7 +69,7 @@ class RegionFile(object):
         self._sector_usage = None
         self._chunks = []
 
-        file_exists = _os.path.exists(filename)
+        file_exists = os.path.exists(filename)
         file_mode = {'r': 'rb', 'w': 'r+b'}[mode]
 
         if not file_exists:
@@ -135,15 +135,15 @@ class RegionFile(object):
         length = read_int(self.file, 4)
         # Todo: what if compression is not zlib?
         compression = read_int(self.file, 1)
-        data = _zlib.decompress(self.file.read(length - 1))
+        data = zlib.decompress(self.file.read(length - 1))
 
-        return _nbt.decode(data)
+        return nbt.decode(data)
 
     def save_chunk(self, index, chunk):
         if self.mode != 'w':
             raise IOError('region is opened as read only')
 
-        data = _zlib.compress(_nbt.encode(chunk))
+        data = zlib.compress(nbt.encode(chunk))
 
         # Todo: which exception?
         chunk = self._chunks[index]
@@ -152,11 +152,11 @@ class RegionFile(object):
             self._sector_usage.free(chunk['offset'], chunk['sector_count'])
 
         total = len(data) + 5  # 5 bytes for length and compression type
-        chunk['sector_count'] = int(_math.ceil(total / SECTOR_SIZE))
+        chunk['sector_count'] = int(math.ceil(total / SECTOR_SIZE))
         chunk['offset'] = self._sector_usage.alloc(chunk['sector_count'])
 
         # Todo: is this correct?
-        chunk['timestamp'] = int(_time.time() * 1000)
+        chunk['timestamp'] = int(time.time() * 1000)
 
         self.file.seek(chunk['offset'] * SECTOR_SIZE)
         write_int(self.file, len(data) + 1, 4)  # + 1 for compression.
