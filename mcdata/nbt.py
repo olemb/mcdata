@@ -1,4 +1,3 @@
-from __future__ import print_function
 import io
 import sys
 import gzip
@@ -46,7 +45,7 @@ class Compound(dict, Collection):
     # update()  # Update types?
 
     def __repr__(self):
-        return '<compound keys={}>'.format(list(sorted(self.keys())))
+        return f'<compound keys={list(sorted(self.keys()))}>'
 
 
 class List(list, Collection):
@@ -56,7 +55,7 @@ class List(list, Collection):
             self.extend(items)
 
     def __repr__(self):
-        return '<list type={} len={}>'.format(self.type, len(self))
+        return f'<list type={self.type} len={len(self)}>'
 
 
 class DebugFile(object):
@@ -67,7 +66,7 @@ class DebugFile(object):
     def _read_byte(self):
         char = self.file.read(1)
         pos = self.file.tell()
-        line = '    {:08x}: {:02x} {!r}\n'.format(pos, ord(char), char)
+        line = f'    {pos:08x}: {ord(char):02x} {char!r}\n'
         sys.stdout.write(line)
         pos += 1
         return char
@@ -297,17 +296,13 @@ def walk(compound):
             for name in sorted(tag, reverse=True):
                 typename = tag.types[name]
                 value = tag[name]
-                todo.append(('{}/{}'.format(path, name),
-                             typename,
-                             value))
+                todo.append((f'{path}/{name}', typename, value))
         elif isinstance(tag, List):
             typename = tag.type
             i = len(tag)
             for value in reversed(tag):
                 i -= 1
-                todo.append(('{}/{}'.format(path, i),
-                            typename,
-                            value))
+                todo.append((f'{path}/{i}', typename, value))
 
 
 def _format_bytearray(array):
@@ -322,9 +317,9 @@ def print_tree(tree):
             typename = 'list:{}'.format(value.type or '')
 
         try:
-            words.append('<{}[{}]>'.format(typename, len(value)))
+            words.append(f'<{typename}[{len(value)}]>')
         except TypeError:
-            words.append('<{}>'.format(typename))
+            words.append(f'<{typename}>')
 
         if not isinstance(value, Collection):
             if isinstance(value, bytearray):

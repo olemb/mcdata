@@ -3,7 +3,6 @@ Region files (*.mca).
 
 http://minecraft.gamepedia.com/Region_file_format
 """
-from __future__ import division
 import os
 import math
 import zlib
@@ -60,9 +59,9 @@ def write_int(outfile, value, size):
 
 
 class RegionFile(object):
-    # Todo: file object instead of filename and mode?
+    # TODO: file object instead of filename and mode?
     def __init__(self, filename, mode='r'):
-        # Todo: accept file like object.
+        # TODO: accept file like object.
         self.mode = mode
         self.closed = False
 
@@ -123,7 +122,7 @@ class RegionFile(object):
         return [i for i in range(MAX_CHUNKS) if self.spawned(i)]
 
     def load_chunk(self, index):
-        # Todo: this test is already done in __iter__().
+        # TODO: this test is already done in __iter__().
         # Also, what should happen if the chunk doesn't exist?
         # (Exception probably.)
         chunk = self._chunks[index]
@@ -133,9 +132,11 @@ class RegionFile(object):
         self.file.seek(chunk['offset'] * SECTOR_SIZE)
 
         length = read_int(self.file, 4)
-        # Todo: what if compression is not zlib?
         compression = read_int(self.file, 1)
-        data = zlib.decompress(self.file.read(length - 1))
+        if compression == COMPRESSION_ZLIB:
+            data = zlib.decompress(self.file.read(length - 1))
+        else:
+            raise ValueError(f'compression type {compression} not implemented')
 
         return nbt.decode(data)
 
@@ -145,7 +146,7 @@ class RegionFile(object):
 
         data = zlib.compress(nbt.encode(chunk))
 
-        # Todo: which exception?
+        # TODO: which exception?
         chunk = self._chunks[index]
 
         if chunk['offset']:
@@ -155,7 +156,7 @@ class RegionFile(object):
         chunk['sector_count'] = int(math.ceil(total / SECTOR_SIZE))
         chunk['offset'] = self._sector_usage.alloc(chunk['sector_count'])
 
-        # Todo: is this correct?
+        # TODO: is this correct?
         chunk['timestamp'] = int(time.time() * 1000)
 
         self.file.seek(chunk['offset'] * SECTOR_SIZE)
@@ -172,7 +173,7 @@ class RegionFile(object):
         if chunk['offset']:
             self._sector_usage.free(chunk['offset'], chunk['sector_count'])
             chunk['offset'] = chunk['sector_count'] = 0
-            # Todo: clear data?
+            # TODO: clear data?
 
     def close(self):
         if not self.closed:

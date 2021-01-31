@@ -7,15 +7,15 @@ A section is a 16 blocks high slice of the chunk, with section 0 at
  the bottom of the world. There are up to 16 sections. Sections with
  only air are not saved.
 
-Todo: are sections stored if they contain only air, but have a
+TODO: are sections stored if they contain only air, but have a
 populated section above?
 
 
 /  <compound[1]>
 /Level  <compound[12]>
-/Level/Biomes  <bytearray[256]>       # 
+/Level/Biomes  <bytearray[256]>       #
 /Level/Entities  <list[0]>            #
-/Level/HeightMap  <intarray[256]>     # 
+/Level/HeightMap  <intarray[256]>     #
 /Level/InhabitedTime  <long>  308136  #
 /Level/LastUpdate  <long>  446489     #
 /Level/LightPopulated  <byte>  1      #

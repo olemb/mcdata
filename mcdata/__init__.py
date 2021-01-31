@@ -1,5 +1,5 @@
 def make_seed(text):
-    # Todo: handle number.
+    # TODO: handle number.
     h = 0
     for char in text:
         h = (31 * h + ord(char)) & 0xFFFFFFFF
